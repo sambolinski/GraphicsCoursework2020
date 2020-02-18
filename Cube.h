@@ -1,0 +1,23 @@
+#pragma once
+
+#include "Texture.h"
+#include "VertexBufferObjectIndexed.h"
+
+// Class for cube generation, copies code from Plane.h and Sphere.h
+class CCube {
+public:
+    CCube();
+    ~CCube();
+    void Create(string sDirectory, string sFilename, float fWidth, float fHeight, float fDepth,  float fTextureRepeat);
+    void Render();
+    void Release();
+private:
+    UINT m_vao;
+    CVertexBufferObjectIndexed m_vbo;
+    CTexture m_texture;
+    string m_directory;
+    string m_filename;
+    float m_width;
+    float m_height;
+    float m_depth;
+};
