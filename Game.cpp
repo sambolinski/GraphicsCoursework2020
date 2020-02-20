@@ -162,7 +162,7 @@ void Game::Initialise()
 	// You can follow this pattern to load additional shaders
 
 	// Create the skybox
-	// Skybox downloaded from http://www.akimbo.in/forum/viewtopic.php?f=10&t=9
+	// Skybox downloaded from https://opengameart.org/content/space-skybox-1
 	m_pSkybox->Create(2500.0f);
 	
 	// Create the planar terrain
@@ -308,25 +308,6 @@ void Game::Render()
 		m_pSphere->Render();
 	modelViewMatrixStack.Pop();
 
-    //rendering centreline
-	modelViewMatrixStack.Push();
-	    pMainProgram->SetUniform("bUseTexture", false); // turn off texturing
-	    pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-	    pMainProgram->SetUniform("matrices.normalMatrix",
-		m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-	    m_pCatmullRom->RenderCentreline();
-	// Render your object here
-	modelViewMatrixStack.Pop();
-
-    //rendering offset curves
-    modelViewMatrixStack.Push();
-        pMainProgram->SetUniform("bUseTexture", false); // turn off texturing
-        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-        pMainProgram->SetUniform("matrices.normalMatrix",
-        m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-        m_pCatmullRom->RenderOffsetCurves();
-    modelViewMatrixStack.Pop();
-
     //render track
     modelViewMatrixStack.Push();
         pMainProgram->SetUniform("bUseTexture", false); // turn off texturing
@@ -341,6 +322,7 @@ void Game::Render()
         pMainProgram->SetUniform("bUseTexture", true);
         modelViewMatrixStack.Translate(m_pPlayer->GetPosition());
         modelViewMatrixStack *= m_pPlayer->GetPlayerOrientation();
+        modelViewMatrixStack.Rotate(glm::vec3(1.0f, 0.0f, 0.0f),-m_pPlayer->GetSideSpeed()* 2.0f);
         modelViewMatrixStack.Scale(1.0f);
         pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
         pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
@@ -401,7 +383,7 @@ void Game::Update()
                 m_pPlayer->SetPlayerOrientation(playerOrientation);
                 look += m_pPlayer->GetStrafeVector();
                 playerPosition += m_pPlayer->GetStrafeVector();
-                playerPosition += B * glm::vec3(0.0f, 5.0f, 0.0f);
+                playerPosition += B * 5.0f;
                 m_pPlayer->Set(playerPosition, look, up);
 
                 glm::vec3 cameraPosition;
@@ -425,17 +407,20 @@ void Game::Update()
                 glm::vec3 up(0, 1, 0);
                 glm::vec3 N = glm::normalize(glm::cross(T, up));
                 glm::vec3 B = glm::normalize(glm::cross(N, T));
+
+
                 glm::mat4 playerOrientation = glm::mat4(glm::mat3(-T, B, -N));
                 m_pPlayer->SetPlayerOrientation(playerOrientation);
                 look += m_pPlayer->GetStrafeVector();
                 playerPosition += m_pPlayer->GetStrafeVector();
+                playerPosition += B * 5.0f;
                 m_pPlayer->Set(playerPosition, look, up);
 
                 glm::vec3 cameraPosition;
                 glm::vec3 cameraLook = playerPosition;
                 glm::vec3 cameraUp = T;
                 cameraPosition = playerPosition;
-                cameraPosition += B * glm::vec3(0, 50.0f, 0.0f);
+                cameraPosition += B * 50.0f;
                 m_pCamera->Set(cameraPosition, cameraLook, cameraUp);
             }
             break;

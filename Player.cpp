@@ -24,9 +24,9 @@ CPlayer::~CPlayer() {
 void CPlayer::Initialise(glm::vec3 position, glm::vec3 view) {
     m_playerModel = new COpenAssetImportMesh;
     m_playerModel->Load("resources\\models\\Horse\\Horse2.obj");
-    m_maxSpeed = 0.045f * 10;
-    m_maxSideSpeed = 0.045f * 10;
-    m_acceleration = 0.0001f * 10;
+    m_maxSpeed = 0.045f * 2;
+    m_maxSideSpeed = 0.045f * 2;
+    m_acceleration = 0.0001f * 1.0f;
     m_position = position;
     m_view = view;
 
@@ -58,16 +58,16 @@ void CPlayer::AccelerateSide(float acceleration, double &dt) {
 
 void CPlayer::Decelerate(float acceleration, double &dt) {
     if (acceleration > 0) {
-        m_speed = m_speed + (acceleration * dt) >= 0 ? m_speed + (acceleration * dt) : 0;
-    } else {
         m_speed = m_speed + (acceleration * dt) <= 0 ? m_speed + (acceleration * dt) : 0;
+    } else if(acceleration < 0){
+        m_speed = m_speed + (acceleration * dt) >= 0 ? m_speed + (acceleration * dt) : 0;
     }
 }
 void CPlayer::DecelerateSide(float acceleration, double &dt) {
     if (acceleration > 0) {
-        m_sideSpeed = m_sideSpeed + (acceleration * dt) >= 0 ? m_sideSpeed + (acceleration * dt) : 0;
-    } else {
         m_sideSpeed = m_sideSpeed + (acceleration * dt) <= 0 ? m_sideSpeed + (acceleration * dt) : 0;
+    } else if(acceleration < 0){
+        m_sideSpeed = m_sideSpeed + (acceleration * dt) >= 0 ? m_sideSpeed + (acceleration * dt) : 0;
     }
 }
 
@@ -141,7 +141,7 @@ void CPlayer::TranslateByKeyboard(double dt) {
         AccelerateSide(m_acceleration * -1.0f, dt);
     } else {
         if (m_sideSpeed < 0.0f) {
-            DecelerateSide(m_acceleration, dt);
+            DecelerateSide(m_acceleration * 1.0f, dt);
         }
     }
 

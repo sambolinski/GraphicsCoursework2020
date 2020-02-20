@@ -33,11 +33,12 @@ glm::vec3 CCatmullRom::Interpolate(glm::vec3 &p0, glm::vec3 &p1, glm::vec3 &p2, 
 void CCatmullRom::SetControlPoints()
 {
 	// Set control points (m_controlPoints) here, or load from disk
+    
     m_controlPoints.push_back(glm::vec3(100, 5, 0));
     m_controlPoints.push_back(glm::vec3(71, 5, 71));
     m_controlPoints.push_back(glm::vec3(0, 10, 100));
     m_controlPoints.push_back(glm::vec3(-71, 50, 71));
-    m_controlPoints.push_back(glm::vec3(-100, 50, 0));
+    m_controlPoints.push_back(glm::vec3(-100, 30, 0));
     m_controlPoints.push_back(glm::vec3(-71, 10, -71));
     m_controlPoints.push_back(glm::vec3(0, 5, -100));
     m_controlPoints.push_back(glm::vec3(71, 5, -71));
@@ -350,8 +351,10 @@ void CCatmullRom::RenderOffsetCurves()
 void CCatmullRom::RenderTrack()
 {
 	// Bind the VAO m_vaoTrack and render it
+    glDisable(GL_CULL_FACE);
     glBindVertexArray(m_vaoTrack);
     glDrawArrays(GL_TRIANGLES, 0, m_vertexCount);
+    glEnable(GL_CULL_FACE);
 }
 
 int CCatmullRom::CurrentLap(float d)
