@@ -8,6 +8,7 @@
 CCatmullRom::CCatmullRom()
 {
 	m_vertexCount = 0;
+    m_trackWidth = 30;
 }
 
 CCatmullRom::~CCatmullRom()
@@ -34,11 +35,11 @@ void CCatmullRom::SetControlPoints()
 	// Set control points (m_controlPoints) here, or load from disk
     m_controlPoints.push_back(glm::vec3(100, 5, 0));
     m_controlPoints.push_back(glm::vec3(71, 5, 71));
-    m_controlPoints.push_back(glm::vec3(0, 5, 100));
-    m_controlPoints.push_back(glm::vec3(-71, 5, 71));
-    m_controlPoints.push_back(glm::vec3(-100, 5, 0));
-    m_controlPoints.push_back(glm::vec3(-71, 5, -71));
-    m_controlPoints.push_back(glm::vec3(0, 10, -100));
+    m_controlPoints.push_back(glm::vec3(0, 10, 100));
+    m_controlPoints.push_back(glm::vec3(-71, 50, 71));
+    m_controlPoints.push_back(glm::vec3(-100, 50, 0));
+    m_controlPoints.push_back(glm::vec3(-71, 10, -71));
+    m_controlPoints.push_back(glm::vec3(0, 5, -100));
     m_controlPoints.push_back(glm::vec3(71, 5, -71));
 	// Optionally, set upvectors (m_controlUpVectors, one for each control point as well)
 }
@@ -193,15 +194,13 @@ void CCatmullRom::CreateCentreline()
 }
 
 
-void CCatmullRom::CreateOffsetCurves()
-{
-	// Compute the offset curves, one left, and one right.  Store the points in m_leftOffsetPoints and m_rightOffsetPoints respectively
-    float pathWidth = 30;
+void CCatmullRom::CreateOffsetCurves(){
+
     for (unsigned int i = 0; i < m_centrelinePoints.size(); i++) {
         glm::vec3 T = m_centrelinePoints[(i + 1) % m_centrelinePoints.size()] - m_centrelinePoints[i];
         glm::vec3 N = glm::cross(T, glm::vec3(0, 1, 0));
-        glm::vec3 l = m_centrelinePoints[i] - (N * pathWidth * 0.5f);
-        glm::vec3 r = m_centrelinePoints[i] + (N * pathWidth * 0.5f);
+        glm::vec3 l = m_centrelinePoints[i] - (N * m_trackWidth * 0.5f);
+        glm::vec3 r = m_centrelinePoints[i] + (N * m_trackWidth * 0.5f);
         m_leftOffsetPoints.push_back(l);
         m_rightOffsetPoints.push_back(r);
     }

@@ -25,6 +25,7 @@ public:
     //originally bool Sample(float d, glm::vec3 &p, glm::vec3 &up = glm::vec3(0, 0, 0));
 	bool Sample(float d, glm::vec3 &p, glm::vec3 up = glm::vec3(0, 0, 0)); // Return a point on the centreline based on a certain distance along the control curve.
 
+    float &GetTrackWidth() { return m_trackWidth; }
 private:
 
 	void SetControlPoints();
@@ -49,6 +50,6 @@ private:
 	vector<glm::vec3> m_leftOffsetPoints;	// Left offset curve points
 	vector<glm::vec3> m_rightOffsetPoints;	// Right offset curve points
 
-
+    float m_trackWidth;
 	unsigned int m_vertexCount;				// Number of vertices in the track VBO
 };

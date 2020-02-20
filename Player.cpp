@@ -5,11 +5,14 @@ CPlayer::CPlayer() {
 
     m_maxSpeed = 0.0f;
     m_speed = 0.0f;
+    m_maxSideSpeed = 0.0f;
+    m_sideSpeed = 0.0f;
     m_acceleration = 0.0f;
 
     m_position = glm::vec3(0.0f, 0.0f, 0.0f);
     m_view = glm::vec3(0.0f, 0.0f, 0.0f);
     m_upVector = glm::vec3(0.0f, 1.0f, 0.0f);
+    m_strafeVector = glm::vec3(0.00f, 0.0f, 0.0f);
     m_angle = 0;
     m_scale = 0;
 }
@@ -21,8 +24,9 @@ CPlayer::~CPlayer() {
 void CPlayer::Initialise(glm::vec3 position, glm::vec3 view) {
     m_playerModel = new COpenAssetImportMesh;
     m_playerModel->Load("resources\\models\\Horse\\Horse2.obj");
-    m_maxSpeed = 0.045f;
-    m_acceleration = 0.0001f;
+    m_maxSpeed = 0.045f * 10;
+    m_maxSideSpeed = 0.045f * 10;
+    m_acceleration = 0.0001f * 10;
     m_position = position;
     m_view = view;
 
@@ -43,7 +47,13 @@ void CPlayer::Accelerate(float acceleration, double &dt) {
     //ternery statement - adds acceleration to speed unless max speed is reached
     m_speed = m_speed + (acceleration * dt) <= m_maxSpeed ? m_speed + (acceleration * dt) : m_maxSpeed;
     //ternery statement - checks max speed is greater than minimum
-    m_speed = m_speed + (acceleration * dt) >= m_maxSpeed*-1.0f ? m_speed + (acceleration * dt) : m_maxSpeed*1.0f;
+    m_speed = m_speed + (acceleration * dt) >= m_maxSpeed*-1.0f ? m_speed + (acceleration * dt) : m_maxSpeed*-1.0f;
+}
+void CPlayer::AccelerateSide(float acceleration, double &dt) {
+    //ternery statement - adds acceleration to speed unless max speed is reached
+    m_sideSpeed = m_sideSpeed + (acceleration * dt) <= m_maxSideSpeed ? m_sideSpeed + (acceleration * dt) : m_maxSideSpeed;
+    //ternery statement - checks max speed is greater than minimum
+    m_sideSpeed = m_sideSpeed + (acceleration * dt) >= m_maxSideSpeed * -1.0f ? m_sideSpeed + (acceleration * dt) : m_maxSideSpeed * -1.0f;
 }
 
 void CPlayer::Decelerate(float acceleration, double &dt) {
@@ -51,6 +61,13 @@ void CPlayer::Decelerate(float acceleration, double &dt) {
         m_speed = m_speed + (acceleration * dt) >= 0 ? m_speed + (acceleration * dt) : 0;
     } else {
         m_speed = m_speed + (acceleration * dt) <= 0 ? m_speed + (acceleration * dt) : 0;
+    }
+}
+void CPlayer::DecelerateSide(float acceleration, double &dt) {
+    if (acceleration > 0) {
+        m_sideSpeed = m_sideSpeed + (acceleration * dt) >= 0 ? m_sideSpeed + (acceleration * dt) : 0;
+    } else {
+        m_sideSpeed = m_sideSpeed + (acceleration * dt) <= 0 ? m_sideSpeed + (acceleration * dt) : 0;
     }
 }
 
@@ -76,11 +93,33 @@ void CPlayer::Advance() {
     m_view = m_view + view * m_speed;
 
 }
-void CPlayer::Update(double dt) {
+void CPlayer::Update(double dt, double max) {
+
+    glm::vec3 vector = glm::cross(m_view - m_position, m_upVector);
+    m_strafeVector = glm::normalize(vector);
+
     TranslateByKeyboard(dt);
     Advance();
+    Strafe(max);
 }
+void CPlayer::Strafe( double max) {
+    if (m_sideAmount > max) {
+        m_sideAmount = max;
+    } else if(m_sideAmount < -max) {
+        m_sideAmount = -max;
+    }
+    if (m_sideAmount <= max && m_sideAmount >= -max) {
+        m_sideAmount += m_sideSpeed;
+    }
+    if (m_sideAmount > 0) {
+        m_strafeVector *= max;
+        m_strafeVector *= (m_sideAmount / max);
+    } else {
+        m_strafeVector *= -max;
+        m_strafeVector *= (m_sideAmount / -max);
 
+    }
+}
 void CPlayer::TranslateByKeyboard(double dt) {
     if (GetKeyState(VK_UP) & 0x80 || GetKeyState('W') & 0x80) {
         Accelerate(m_acceleration, dt);
@@ -99,12 +138,26 @@ void CPlayer::TranslateByKeyboard(double dt) {
     }
 
     if (GetKeyState(VK_LEFT) & 0x80 || GetKeyState('A') & 0x80) {
-        Turn(1.0f, dt);
+        AccelerateSide(m_acceleration * -1.0f, dt);
+    } else {
+        if (m_sideSpeed < 0.0f) {
+            DecelerateSide(m_acceleration, dt);
+        }
     }
 
     if (GetKeyState(VK_RIGHT) & 0x80 || GetKeyState('D') & 0x80) {
-        Turn(-1.0f, dt);
+        AccelerateSide(m_acceleration, dt);
+    } else {
+        if (m_sideSpeed > 0.0f) {
+            DecelerateSide(m_acceleration * -1.0f, dt);
+        }
     }
+}
+void CPlayer::Set(glm::vec3 &position, glm::vec3 &viewpoint, glm::vec3 &upVector) {
+    m_position = position;
+    m_view = viewpoint;
+    m_upVector = upVector;
+
 }
 void CPlayer::Render() {
     m_playerModel->Render();

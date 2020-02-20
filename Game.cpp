@@ -340,8 +340,7 @@ void Game::Render()
     modelViewMatrixStack.Push();
         pMainProgram->SetUniform("bUseTexture", true);
         modelViewMatrixStack.Translate(m_pPlayer->GetPosition());
-        glm::vec3 base = m_pPlayer->GetPosition() + glm::vec3(0.0f, 0.0f, 1.0f);
-        modelViewMatrixStack.Rotate(glm::vec3(0.0f, 1.0f, 0.0f), m_pPlayer->GetAngle());
+        modelViewMatrixStack *= m_pPlayer->GetPlayerOrientation();
         modelViewMatrixStack.Scale(1.0f);
         pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
         pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
@@ -359,7 +358,7 @@ void Game::Render()
         m_pCube->Render();
     modelViewMatrixStack.Pop();
 
-    // Render the cube
+    // Render the square pyramid
     modelViewMatrixStack.Push();
         modelViewMatrixStack.Translate(glm::vec3(0.0f, 80.0f, 0.0f));
         modelViewMatrixStack.Scale(2.0f);
@@ -385,42 +384,59 @@ void Game::Update()
     switch (m_pCamera->GetViewType()) {
         case 0: // Third Person
             {
-                m_pPlayer->Update(m_dt);
-                glm::vec3 position = m_pPlayer->GetPosition();
-                glm::vec3 positionNext = m_pPlayer->GetView();
-                glm::vec3 T = glm::normalize(positionNext - position);
-                glm::vec3 look = position + (T * 20.0f * m_pPlayer->GetScale());
+                m_pPlayer->Update(m_dt,m_pCatmullRom->GetTrackWidth() * 0.5f);
+                m_currentDistance += m_pPlayer->GetSpeed();
+                glm::vec3 playerPosition;
+                m_pCatmullRom->Sample(m_currentDistance, playerPosition);
+                glm::vec3 playerPositionNext;
+                m_pCatmullRom->Sample(m_currentDistance + 1.0f, playerPositionNext);
+                glm::vec3 T = glm::normalize(playerPositionNext - playerPosition);
+                glm::vec3 look = playerPosition + (T * 10.0f);
                 glm::vec3 up(0, 1, 0);
-
                 glm::vec3 N = glm::normalize(glm::cross(T, up));
                 glm::vec3 B = glm::normalize(glm::cross(N, T));
 
-                position -= T * 15.0f * m_pPlayer->GetScale();
-                position += B * glm::vec3(0, 7.5f * m_pPlayer->GetScale(), 0.0f);
 
-                m_pCamera->Set(position, look, up);
+                glm::mat4 playerOrientation = glm::mat4(glm::mat3(-T, B, -N));
+                m_pPlayer->SetPlayerOrientation(playerOrientation);
+                look += m_pPlayer->GetStrafeVector();
+                playerPosition += m_pPlayer->GetStrafeVector();
+                playerPosition += B * glm::vec3(0.0f, 5.0f, 0.0f);
+                m_pPlayer->Set(playerPosition, look, up);
+
+                glm::vec3 cameraPosition;
+                glm::vec3 cameraLook = playerPosition + (T * 20.0f * m_pPlayer->GetScale());
+                cameraPosition = playerPosition;
+                cameraPosition -= T * 15.0f * m_pPlayer->GetScale();
+                cameraPosition += B * glm::vec3(0, 3.0f * m_pPlayer->GetScale(), 0.0f);
+                m_pCamera->Set(cameraPosition, cameraLook, up);
             }
             break;
         case 1: //Top down View
             {
-                m_pPlayer->Update(m_dt);
-                glm::vec3 position = m_pPlayer->GetPosition();
-                glm::vec3 positionNext = m_pPlayer->GetView();
-                glm::vec3 T = glm::normalize(positionNext - position);
-                glm::vec3 look = position + (T * 20.0f);
+                m_pPlayer->Update(m_dt, m_pCatmullRom->GetTrackWidth() * 0.5f);
+                m_currentDistance += m_pPlayer->GetSpeed();
+                glm::vec3 playerPosition;
+                m_pCatmullRom->Sample(m_currentDistance, playerPosition);
+                glm::vec3 playerPositionNext;
+                m_pCatmullRom->Sample(m_currentDistance + 1.0f, playerPositionNext);
+                glm::vec3 T = glm::normalize(playerPositionNext - playerPosition);
+                glm::vec3 look = playerPosition + (T * 10.0f);
                 glm::vec3 up(0, 1, 0);
-
                 glm::vec3 N = glm::normalize(glm::cross(T, up));
                 glm::vec3 B = glm::normalize(glm::cross(N, T));
+                glm::mat4 playerOrientation = glm::mat4(glm::mat3(-T, B, -N));
+                m_pPlayer->SetPlayerOrientation(playerOrientation);
+                look += m_pPlayer->GetStrafeVector();
+                playerPosition += m_pPlayer->GetStrafeVector();
+                m_pPlayer->Set(playerPosition, look, up);
 
-                position += B * glm::vec3(0, 50.0f, 0.0f);
-
-                up = T;
-                look = m_pPlayer->GetPosition();
-                //Looking at player
-                //Top of camera is the direction of the player
-                //Position is above the player
-                m_pCamera->Set(position, look, up); 
+                glm::vec3 cameraPosition;
+                glm::vec3 cameraLook = playerPosition;
+                glm::vec3 cameraUp = T;
+                cameraPosition = playerPosition;
+                cameraPosition += B * glm::vec3(0, 50.0f, 0.0f);
+                m_pCamera->Set(cameraPosition, cameraLook, cameraUp);
             }
             break;
         case 2:
