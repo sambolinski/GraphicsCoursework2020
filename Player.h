@@ -25,6 +25,7 @@ public:
     float &GetAcceleration() { return m_acceleration; }
     float &GetScale() { return m_scale; }
     float &GetSpeed() { return m_speed;  }
+    float &GetMaxSpeed() { return m_maxSpeed; }
     glm::vec3 &GetStrafeVector() { return m_strafeVector; }
     float &GetSideAmount() { return m_sideAmount; }
     float &GetSideSpeed() { return m_sideSpeed; }
@@ -37,7 +38,7 @@ public:
     void TranslateByKeyboard(double dt);
     void Advance();
     void Strafe(double max);
-    void Update(double dt, double max);
+    void Update(double dt, double max, bool playerUpdate);
     void Set(glm::vec3 &position, glm::vec3 &viewpoint, glm::vec3 &upVector);
     //-----------------------//
 private:

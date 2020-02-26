@@ -33,16 +33,41 @@ glm::vec3 CCatmullRom::Interpolate(glm::vec3 &p0, glm::vec3 &p1, glm::vec3 &p2, 
 void CCatmullRom::SetControlPoints()
 {
 	// Set control points (m_controlPoints) here, or load from disk
-    
+    /*
     m_controlPoints.push_back(glm::vec3(100, 5, 0));
     m_controlPoints.push_back(glm::vec3(71, 5, 71));
     m_controlPoints.push_back(glm::vec3(0, 10, 100));
-    m_controlPoints.push_back(glm::vec3(-71, 50, 71));
+    m_controlPoints.push_back(glm::vec3(-71, 20, 71));
     m_controlPoints.push_back(glm::vec3(-100, 30, 0));
     m_controlPoints.push_back(glm::vec3(-71, 10, -71));
     m_controlPoints.push_back(glm::vec3(0, 5, -100));
     m_controlPoints.push_back(glm::vec3(71, 5, -71));
 	// Optionally, set upvectors (m_controlUpVectors, one for each control point as well)
+    */
+    m_controlPoints.push_back(glm::vec3( 291,  -100, -1452));
+    m_controlPoints.push_back(glm::vec3( 291,  -100, -1162));
+    m_controlPoints.push_back(glm::vec3( -16,  -100, -810));
+    m_controlPoints.push_back(glm::vec3( -480, -100, -463));
+    m_controlPoints.push_back(glm::vec3( -886,  584,  127));
+    m_controlPoints.push_back(glm::vec3( -784,  584,  664));
+    m_controlPoints.push_back(glm::vec3( -359,  584,  855));
+    m_controlPoints.push_back(glm::vec3(   93,  584,  865));
+    m_controlPoints.push_back(glm::vec3(  695,  584,  833));
+    m_controlPoints.push_back(glm::vec3( 1125, -100,  510));
+    m_controlPoints.push_back(glm::vec3( 1009, -100, -348));
+    m_controlPoints.push_back(glm::vec3(  896, -100, -719));
+    m_controlPoints.push_back(glm::vec3(  737, -100, -978));
+    m_controlPoints.push_back(glm::vec3(  694, -100, -1308));
+    m_controlPoints.push_back(glm::vec3(  674, -100, -1647));
+    m_controlPoints.push_back(glm::vec3(  376, -100, -1703));
+    for (unsigned int i = 0; i < m_controlPoints.size(); i++) {
+        m_controlPoints[i] * 0.05f;
+    }
+    for (unsigned int i = 0; i < m_controlPoints.size(); i++) {
+        m_controlPoints[i].y += -300.0f;
+        m_controlPoints[i].x +=  100.0f;
+        m_controlPoints[i].z += -300.0f;
+    }
 }
 
 
@@ -162,7 +187,7 @@ void CCatmullRom::CreateCentreline()
 	// Call Set Control Points
     SetControlPoints();
 	// Call UniformlySampleControlPoints with the number of samples required
-    UniformlySampleControlPoints(500);
+    UniformlySampleControlPoints(1000);
 	// Create a VAO called m_vaoCentreline and a VBO to get the points onto the graphics card
     glGenVertexArrays(1, &m_vaoCentreline);
     glBindVertexArray(m_vaoCentreline);
@@ -172,6 +197,7 @@ void CCatmullRom::CreateCentreline()
     vbo.Bind();
     glm::vec2 texCoord(0.0f, 0.0f);
     glm::vec3 normal(0.0f, 1.0f, 0.0f);
+
     for (unsigned int i = 0; i < m_centrelinePoints.size(); i++) {
         vbo.AddData(&m_centrelinePoints[i], sizeof(glm::vec3));
         vbo.AddData(&texCoord, sizeof(glm::vec2));
@@ -199,7 +225,7 @@ void CCatmullRom::CreateOffsetCurves(){
 
     for (unsigned int i = 0; i < m_centrelinePoints.size(); i++) {
         glm::vec3 T = m_centrelinePoints[(i + 1) % m_centrelinePoints.size()] - m_centrelinePoints[i];
-        glm::vec3 N = glm::cross(T, glm::vec3(0, 1, 0));
+        glm::vec3 N = glm::normalize(glm::cross(T, glm::vec3(0, 1, 0))); //normalised so track width remains constant
         glm::vec3 l = m_centrelinePoints[i] - (N * m_trackWidth * 0.5f);
         glm::vec3 r = m_centrelinePoints[i] + (N * m_trackWidth * 0.5f);
         m_leftOffsetPoints.push_back(l);
@@ -266,17 +292,81 @@ void CCatmullRom::CreateOffsetCurves(){
 }
 
 
-void CCatmullRom::CreateTrack()
-{
-	// Generate a VAO called m_vaoTrack and a VBO to get the offset curve points and indices on the graphics card
+void CCatmullRom::CreateTrack(std::string directory, std::string filename) {
+
+    m_texture.Load(directory + filename, true);
+
+    // Set parameters for texturing using sampler object
+    m_texture.SetSamplerObjectParameter(GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    m_texture.SetSamplerObjectParameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    m_texture.SetSamplerObjectParameter(GL_TEXTURE_WRAP_S, GL_REPEAT);
+    m_texture.SetSamplerObjectParameter(GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    // Generate a VAO called m_vaoTrack and a VBO to get the offset curve points and indices on the graphics card
     glGenVertexArrays(1, &m_vaoTrack);
     glBindVertexArray(m_vaoTrack);
     CVertexBufferObject vboTrack;
     vboTrack.Create();
     vboTrack.Bind();
+
+
+    std::vector<glm::vec2> texCoords = {
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(0.0f, 1.0f),
+        glm::vec2(1.0f, 0.0f),
+        glm::vec2(1.0f, 1.0f)
+    };
     glm::vec2 texCoord(0.0f, 0.0f);
     glm::vec3 normal(0.0f, 1.0f, 0.0f);
 
+    std::vector<glm::vec3> rightOffsetNormals;
+    std::vector<glm::vec3> leftOffsetNormals;
+
+    
+    for (int i = 0; i < m_rightOffsetPoints.size(); i++) {
+        glm::vec3 T = glm::normalize(m_centrelinePoints[(i + 1) % m_centrelinePoints.size()] - m_centrelinePoints[i]);
+        glm::vec3 N = glm::normalize(glm::cross(T, glm::vec3(0.0f, 1.0f, 0.0f)));
+        glm::vec3 B = glm::normalize(glm::cross(N, T));
+        rightOffsetNormals.push_back(B);
+
+        T = glm::normalize(m_centrelinePoints[(i + 1) % m_centrelinePoints.size()] - m_centrelinePoints[i]);
+        N = glm::normalize(glm::cross(T, glm::vec3(0.0f, 1.0f, 0.0f)));
+        B = glm::normalize(glm::cross(N, T));
+        leftOffsetNormals.push_back(B);
+    }
+    for (unsigned int i = 0; i < m_rightOffsetPoints.size(); i++) {
+        vboTrack.AddData(&m_leftOffsetPoints[i % m_leftOffsetPoints.size()], sizeof(glm::vec3)); 
+        m_vertexCount++;
+        vboTrack.AddData(&texCoords[0], sizeof(glm::vec2));
+        vboTrack.AddData(&leftOffsetNormals[i], sizeof(glm::vec3));
+
+        vboTrack.AddData(&m_rightOffsetPoints[i % m_rightOffsetPoints.size()], sizeof(glm::vec3));
+        m_vertexCount++;
+        vboTrack.AddData(&texCoords[2], sizeof(glm::vec2));
+        vboTrack.AddData(&rightOffsetNormals[i], sizeof(glm::vec3));
+
+        vboTrack.AddData(&m_leftOffsetPoints[(i + 1) % m_leftOffsetPoints.size()], sizeof(glm::vec3));
+        m_vertexCount++;
+        vboTrack.AddData(&texCoords[1], sizeof(glm::vec2));
+        vboTrack.AddData(&leftOffsetNormals[(i + 1) % leftOffsetNormals.size()], sizeof(glm::vec3));
+        
+        vboTrack.AddData(&m_rightOffsetPoints[i % m_rightOffsetPoints.size()], sizeof(glm::vec3));
+        m_vertexCount++;
+        vboTrack.AddData(&texCoords[2], sizeof(glm::vec2));
+        vboTrack.AddData(&rightOffsetNormals[i], sizeof(glm::vec3));
+
+        vboTrack.AddData(&m_rightOffsetPoints[(i + 1) % m_rightOffsetPoints.size()], sizeof(glm::vec3));
+        m_vertexCount++;
+        vboTrack.AddData(&texCoords[3], sizeof(glm::vec2));
+        vboTrack.AddData(&rightOffsetNormals[(i + 1) % rightOffsetNormals.size()], sizeof(glm::vec3));
+
+        vboTrack.AddData(&m_leftOffsetPoints[(i + 1) % m_leftOffsetPoints.size()], sizeof(glm::vec3));
+        m_vertexCount++;
+        vboTrack.AddData(&texCoords[1], sizeof(glm::vec2));
+        vboTrack.AddData(&leftOffsetNormals[(i + 1) % leftOffsetNormals.size()], sizeof(glm::vec3));
+    }
+    
+    /*
     for (unsigned int i = 0; i < m_rightOffsetPoints.size(); i++) {
         vboTrack.AddData(&m_leftOffsetPoints[i % m_leftOffsetPoints.size()], sizeof(glm::vec3)); 
         m_vertexCount++;
@@ -308,6 +398,7 @@ void CCatmullRom::CreateTrack()
         vboTrack.AddData(&texCoord, sizeof(glm::vec2));
         vboTrack.AddData(&normal, sizeof(glm::vec3));
     }
+    */
     vboTrack.UploadDataToGPU(GL_STATIC_DRAW);
     GLsizei stride = 2 * sizeof(glm::vec3) + sizeof(glm::vec2);
     // Vertex positions
@@ -353,7 +444,8 @@ void CCatmullRom::RenderTrack()
 	// Bind the VAO m_vaoTrack and render it
     glDisable(GL_CULL_FACE);
     glBindVertexArray(m_vaoTrack);
-    glDrawArrays(GL_TRIANGLES, 0, m_vertexCount);
+    m_texture.Bind();
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, m_vertexCount);
     glEnable(GL_CULL_FACE);
 }
 

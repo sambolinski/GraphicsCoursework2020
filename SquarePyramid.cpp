@@ -87,16 +87,23 @@ void CSquarePyramid::Create(string directory, string filename, float width, floa
     // Texture coordinates
     glm::vec2 squarePyramidFloorTexCoords[4] =
     {
-        glm::vec2(0.0f, 0.0f),
-        glm::vec2(0.0f, textureRepeat),
+        /*
+        glm::vec2(textureRepeat * 0.5f, 0.0f),
+        glm::vec2(textureRepeat, textureRepeat),
         glm::vec2(textureRepeat, 0.0f),
-        glm::vec2(textureRepeat, textureRepeat)
+        glm::vec2(textureRepeat * 0.5f, textureRepeat),
+        */
+        glm::vec2(textureRepeat * 0.5f, 0.0f),
+        glm::vec2(textureRepeat * 0.5f, textureRepeat),
+        glm::vec2(textureRepeat, textureRepeat),
+        glm::vec2(textureRepeat, 0.0f),
+
     };
-    glm::vec2 squarePyramidSideTexCoords[4] =
+    glm::vec2 squarePyramidSideTexCoords[3] =
     {
+        glm::vec2(textureRepeat * 0.5f, 0.0f),
         glm::vec2(0.0f, 0.0f),
-        glm::vec2(0.0f, textureRepeat),
-        glm::vec2(textureRepeat, textureRepeat * 0.5f),
+        glm::vec2(textureRepeat * 0.25f, textureRepeat)
     };
 
     // Cube normal
@@ -108,24 +115,24 @@ void CSquarePyramid::Create(string directory, string filename, float width, floa
         glm::vec3(0.0f, -1.0f, 0.0f),
 
         //Left Face
-        glm::vec3(1.0f, 0.0f, 0.0f),
-        glm::vec3(1.0f, 0.0f, 0.0f),
-        glm::vec3(1.0f, 0.0f, 0.0f),
+        glm::vec3(0.8944f, -0.4472f, 0.0f),
+        glm::vec3(0.8944f, -0.4472f, 0.0f),
+        glm::vec3(0.8944f, -0.4472f, 0.0f),
 
         //Front Face
-        glm::vec3(0.0f, 0.0f, 1.0f),
-        glm::vec3(0.0f, 0.0f, 1.0f),
-        glm::vec3(0.0f, 0.0f, 1.0f),
+        glm::vec3(0.0f, -0.4472f, -0.8944f),
+        glm::vec3(0.0f, -0.4472f, -0.8944f),
+        glm::vec3(0.0f, -0.4472f, -0.8944f),
 
         //Right face
-        glm::vec3(1.0f, 0.0f, 0.0f),
-        glm::vec3(1.0f, 0.0f, 0.0f),
-        glm::vec3(1.0f, 0.0f, 0.0f),
+        glm::vec3(-0.8944f, -0.4472f, 0.0f),
+        glm::vec3(-0.8944f, -0.4472f, 0.0f),
+        glm::vec3(-0.8944f, -0.4472f, 0.0f),
 
         //Behind Face
-        glm::vec3(0.0f, 0.0f, -1.0f),
-        glm::vec3(0.0f, 0.0f, -1.0f),
-        glm::vec3(0.0f, 0.0f, -1.0f)
+        glm::vec3(0.0f, -0.4472f, 0.8944f),
+        glm::vec3(0.0f, -0.4472f, 0.8944f),
+        glm::vec3(0.0f, -0.4472f, 0.8944f)
     };
 
     // Put the vertex attributes in the VBO

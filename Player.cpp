@@ -23,8 +23,8 @@ CPlayer::~CPlayer() {
 
 void CPlayer::Initialise(glm::vec3 position, glm::vec3 view) {
     m_playerModel = new COpenAssetImportMesh;
-    m_playerModel->Load("resources\\models\\Horse\\Horse2.obj");
-    m_maxSpeed = 0.045f * 2;
+    m_playerModel->Load("resources\\models\\Saucer\\Saucer.obj");
+    m_maxSpeed = 0.045 * 50.0f; //laptop  = *2, pc = *10
     m_maxSideSpeed = 0.045f * 2;
     m_acceleration = 0.0001f * 1.0f;
     m_position = position;
@@ -93,12 +93,26 @@ void CPlayer::Advance() {
     m_view = m_view + view * m_speed;
 
 }
-void CPlayer::Update(double dt, double max) {
+void CPlayer::Update(double dt, double max, bool playerUpdate) {
 
     glm::vec3 vector = glm::cross(m_view - m_position, m_upVector);
     m_strafeVector = glm::normalize(vector);
+    if (playerUpdate) {
+        TranslateByKeyboard(dt);
+    } else {
+        if (m_speed > 0.0f) {
+            Decelerate(m_acceleration*-4.0f, dt);
+        } else if (m_speed < 0.0f) {
+            Decelerate(m_acceleration, dt);
+        }
 
-    TranslateByKeyboard(dt);
+
+        if (m_sideSpeed < 0.0f) {
+            DecelerateSide(m_acceleration * 1.0f, dt);
+        } else if (m_sideSpeed > 0.0f) {
+            DecelerateSide(m_acceleration * -1.0f, dt);
+        }
+    }
     Advance();
     Strafe(max);
 }
@@ -125,7 +139,7 @@ void CPlayer::TranslateByKeyboard(double dt) {
         Accelerate(m_acceleration, dt);
     } else {
         if (m_speed > 0.0f) {
-            Decelerate(m_acceleration*-1.0f, dt);
+            Decelerate(m_acceleration*-4.0f, dt);
         }
     }
 

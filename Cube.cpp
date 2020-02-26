@@ -102,41 +102,93 @@ void CCube::Create(string directory, string filename, float width, float height,
 
     };
     // Texture coordinates
-    glm::vec2 cubeTexCoords[4] =
+    glm::vec2 cubeTexCoords[24] =
     {
+        /*
+        //Bottom Face
+        glm::vec2(0.625f, 0.25f),
+        glm::vec2(0.625f, 0.0f),
+        glm::vec2(0.375f, 0.25f),
+        glm::vec2(0.375f, 0.0f),
+
+        //Face Left
+        glm::vec2(0.375f, 0.50f),
+        glm::vec2(0.125f, 0.50f),
+        glm::vec2(0.375f, 0.75f),
+        glm::vec2(0.125f, 0.75f),
+
+        //Face Front
+        glm::vec2(0.375f, 0.75f),
+        glm::vec2(0.375f, 1.0f),
+        glm::vec2(0.625f, 0.75f),
+        glm::vec2(0.625f, 1.0f),
+
+        //Face Right
+        glm::vec2(0.625f, 0.5f),
+        glm::vec2(0.625f, 0.75f),
+        glm::vec2(0.875f, 0.5f),
+        glm::vec2(0.875f, 0.75f),
+
+        //Face behind
+        glm::vec2(0.375f, 0.25f),
+        glm::vec2(0.375f, 0.5f),
+        glm::vec2(0.625f, 0.25f),
+        glm::vec2(0.625f, 0.5f),
+        */
         glm::vec2(0.0f, 0.0f),
-        glm::vec2(0.0f, textureRepeat),
-        glm::vec2(textureRepeat, 0.0f),
-        glm::vec2(textureRepeat, textureRepeat)
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(0.0f, 0.0f),
+        //Face Top
+        glm::vec2(0.375f, 0.5f),
+        glm::vec2(0.375f, 0.25f),
+        glm::vec2(0.625f, 0.5f),
+        glm::vec2(0.625f, 0.25f)
     };
 
     // Cube normal
     glm::vec3 cubeNormals[6] = {
         //Bottom Face
-        glm::vec3(0.0f, -1.0f, 0.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f),
 
         //Left Face
         glm::vec3(1.0f, 0.0f, 0.0f),
 
         //Front Face
-        glm::vec3(0.0f, 0.0f, 1.0f),
-
-        //Right face
-        glm::vec3(1.0f, 0.0f, 0.0f),
-
-        //Behind Face
         glm::vec3(0.0f, 0.0f, -1.0f),
 
+        //Right face
+        glm::vec3(-1.0f, 0.0f, 0.0f),
+
+        //Behind Face
+        glm::vec3(0.0f, 0.0f, 1.0f),
+
         //Top Face
-        glm::vec3(0.0f, 1.0f,  0.0f),
+        glm::vec3(0.0f, -1.0f,  0.0f),
     };
 
     // Put the vertex attributes in the VBO
     unsigned int normalCounter = 0;
-    for (unsigned int i = 0; i < 36; i++) {
+    for (unsigned int i = 0; i < 24; i++) {
         m_vbo.AddVertexData(&cubeVertices[i], sizeof(glm::vec3));
-        m_vbo.AddVertexData(&cubeTexCoords[i%4], sizeof(glm::vec2));
-        normalCounter += (normalCounter % 6 == 0) ? 1 : 0;
+        m_vbo.AddVertexData(&cubeTexCoords[i], sizeof(glm::vec2));
+        normalCounter += (i % 4 == 0) ? 1 : 0;
         m_vbo.AddVertexData(&cubeNormals[normalCounter], sizeof(glm::vec3));
     }
     for (int i = 0; i < 36; i++) {

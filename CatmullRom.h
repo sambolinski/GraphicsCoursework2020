@@ -17,7 +17,7 @@ public:
 	void CreateOffsetCurves();
 	void RenderOffsetCurves();
 
-	void CreateTrack();
+	void CreateTrack(std::string directory, std::string filename);
 	void RenderTrack();
 
 	int CurrentLap(float d); // Return the currvent lap (starting from 0) based on distance along the control curve.
@@ -26,6 +26,9 @@ public:
 	bool Sample(float d, glm::vec3 &p, glm::vec3 up = glm::vec3(0, 0, 0)); // Return a point on the centreline based on a certain distance along the control curve.
 
     float &GetTrackWidth() { return m_trackWidth; }
+
+    vector<glm::vec3> &GetControlPoints() { return m_controlPoints; }
+
 private:
 
 	void SetControlPoints();

@@ -43,6 +43,7 @@ private:
     CPlayer *m_pPlayer;
     CCube *m_pCube;
     CSquarePyramid *m_pSquarePyramid;
+    COpenAssetImportMesh *m_pPlanet;
 
 	// Some other member variables
     float m_currentDistance;
@@ -67,6 +68,6 @@ private:
 	HINSTANCE m_hInstance;
 	int m_frameCount;
 	double m_elapsedTime;
-
+    double m_gameTime;
 
 };

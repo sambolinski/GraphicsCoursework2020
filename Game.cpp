@@ -56,6 +56,7 @@ Game::Game()
     m_pPlayer = NULL;
     m_pCube = NULL;
     m_pSquarePyramid = NULL;
+    m_pPlanet = NULL;
 
 	m_dt = 0.0;
 	m_framesPerSecond = 0;
@@ -80,6 +81,7 @@ Game::~Game()
     delete m_pPlayer;
     delete m_pCube;
     delete m_pSquarePyramid;
+    delete m_pPlanet;
 
 	if (m_pShaderPrograms != NULL) {
 		for (unsigned int i = 0; i < m_pShaderPrograms->size(); i++)
@@ -112,6 +114,7 @@ void Game::Initialise()
     m_pPlayer = new CPlayer;
     m_pCube = new CCube;
     m_pSquarePyramid = new CSquarePyramid;
+    m_pPlanet = new COpenAssetImportMesh;
 
 	RECT dimensions = m_gameWindow.GetDimensions();
 
@@ -166,7 +169,7 @@ void Game::Initialise()
 	m_pSkybox->Create(2500.0f);
 	
 	// Create the planar terrain
-	m_pPlanarTerrain->Create("resources\\textures\\", "grassfloor01.jpg", 2000.0f, 2000.0f, 50.0f); // Texture downloaded from http://www.psionicgames.com/?page_id=26 on 24 Jan 2013
+	//m_pPlanarTerrain->Create("resources\\textures\\", "grassfloor01.jpg", 2000.0f, 2000.0f, 50.0f); // Texture downloaded from http://www.psionicgames.com/?page_id=26 on 24 Jan 2013
 
 	m_pFtFont->LoadSystemFont("arial.ttf", 32);
 	m_pFtFont->SetShaderProgram(pFontProgram);
@@ -191,26 +194,28 @@ void Game::Initialise()
 
     m_pCatmullRom->CreateCentreline(); 
     m_pCatmullRom->CreateOffsetCurves();
-    m_pCatmullRom->CreateTrack();
+    m_pCatmullRom->CreateTrack("resources\\textures\\", "track2.png");
 
     // Create the player
     glm::vec3 playerPosition;
     glm::vec3 playerView;
     m_pCatmullRom->Sample(0.5f, playerPosition);
     m_pCatmullRom->Sample(1.0f, playerView);
-    m_pPlayer->Initialise(playerPosition, playerView);
+    m_pPlayer->Initialise(playerPosition, playerView); //made using Blender
 
     //Create the cube;
-    m_pCube->Create("resources\\textures\\", "grassfloor01.jpg", 10.0f, 10.0f, 10.0f, 5.0f);
+    m_pCube->Create("resources\\textures\\", "Powerup2.png", 10.0f, 10.0f, 10.0f, 5.0f);
 
     //Create the squarePyramid
-    m_pSquarePyramid->Create("resources\\textures\\", "Tile41a.jpg", 11.0f, 11.0f, 10.0f, 5.0f);
+    m_pSquarePyramid->Create("resources\\textures\\", "pyramid.jpg", 11.0f, 11.0f, 10.0f, 1.0f); //Texture by me
+
+    m_pPlanet->Load("resources\\models\\Planet\\Planet.obj"); //made using blender
 }
 
 // Render method runs repeatedly in a loop
 void Game::Render() 
 {
-	
+
 	// Clear the buffers and enable depth testing (z-buffering)
 	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
@@ -218,7 +223,6 @@ void Game::Render()
 	// Set up a matrix stack
 	glutil::MatrixStack modelViewMatrixStack;
 	modelViewMatrixStack.SetIdentity();
-
 	// Use the main shader program 
 	CShaderProgram *pMainProgram = (*m_pShaderPrograms)[0];
 	pMainProgram->UseProgram();
@@ -274,56 +278,14 @@ void Game::Render()
 	pMainProgram->SetUniform("material1.Md", glm::vec3(0.5f));	// Diffuse material reflectance
 	pMainProgram->SetUniform("material1.Ms", glm::vec3(1.0f));	// Specular material reflectance	
 
-
-	// Render the horse 
-	modelViewMatrixStack.Push();
-		modelViewMatrixStack.Translate(glm::vec3(0.0f, 0.0f, 0.0f));
-		modelViewMatrixStack.Rotate(glm::vec3(0.0f, 1.0f, 0.0f), 180.0f);
-		modelViewMatrixStack.Scale(2.5f);
-		pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-		pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-		m_pHorseMesh->Render();
-	modelViewMatrixStack.Pop();
-
-
-	
-	// Render the barrel 
-	modelViewMatrixStack.Push();
-		modelViewMatrixStack.Translate(glm::vec3(100.0f, 0.0f, 0.0f));
-		modelViewMatrixStack.Scale(5.0f);
-		pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-		pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-		m_pBarrelMesh->Render();
-	modelViewMatrixStack.Pop();
-	
-
-	// Render the sphere
-	modelViewMatrixStack.Push();
-		modelViewMatrixStack.Translate(glm::vec3(0.0f, 2.0f, 150.0f));
-		modelViewMatrixStack.Scale(2.0f);
-		pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-		pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-		// To turn off texture mapping and use the sphere colour only (currently white material), uncomment the next line
-		//pMainProgram->SetUniform("bUseTexture", false);
-		m_pSphere->Render();
-	modelViewMatrixStack.Pop();
-
-    //render track
-    modelViewMatrixStack.Push();
-        pMainProgram->SetUniform("bUseTexture", false); // turn off texturing
-        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-        pMainProgram->SetUniform("matrices.normalMatrix",
-        m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-        m_pCatmullRom->RenderTrack();
-    modelViewMatrixStack.Pop();
-
     //render player
     modelViewMatrixStack.Push();
         pMainProgram->SetUniform("bUseTexture", true);
+        m_pPlayer->GetPosition().y += sin(m_gameTime / 250)*m_pPlayer->GetSpeed() * 0.3f;
         modelViewMatrixStack.Translate(m_pPlayer->GetPosition());
         modelViewMatrixStack *= m_pPlayer->GetPlayerOrientation();
         modelViewMatrixStack.Rotate(glm::vec3(1.0f, 0.0f, 0.0f),-m_pPlayer->GetSideSpeed()* 2.0f);
-        modelViewMatrixStack.Scale(1.0f);
+        modelViewMatrixStack.Scale(m_pPlayer->GetScale());
         pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
         pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
         m_pPlayer->Render();
@@ -331,26 +293,46 @@ void Game::Render()
 
     // Render the cube
     modelViewMatrixStack.Push();
-        modelViewMatrixStack.Translate(glm::vec3(0.0f, 40.0f, 0.0f));
+        modelViewMatrixStack.Translate(glm::vec3(600.0f, 0.0f, -1780.0f));
         modelViewMatrixStack.Scale(2.0f);
         pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
         pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-        // To turn off texture mapping and use the sphere colour only (currently white material), uncomment the next line
-        //pMainProgram->SetUniform("bUseTexture", false);
         m_pCube->Render();
     modelViewMatrixStack.Pop();
 
     // Render the square pyramid
     modelViewMatrixStack.Push();
-        modelViewMatrixStack.Translate(glm::vec3(0.0f, 80.0f, 0.0f));
-        modelViewMatrixStack.Scale(2.0f);
+        modelViewMatrixStack.Translate(glm::vec3(600.0f, -360.0f + sin(m_gameTime/1000)*30.0f, -1780.0f));
+        modelViewMatrixStack.Rotate(glm::vec3(0.0f, 1.0f,0.0f), (m_gameTime / 1000)*0.25f);
+        modelViewMatrixStack.Scale(20.0f);
         pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
         pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-        // To turn off texture mapping and use the sphere colour only (currently white material), uncomment the next line
-        //pMainProgram->SetUniform("bUseTexture", false);
         m_pSquarePyramid->Render();
     modelViewMatrixStack.Pop();
 
+    // Render the Planet
+    modelViewMatrixStack.Push(); 
+        //pMainProgram->SetUniform("bUseTexture", true);
+        modelViewMatrixStack.Translate(glm::vec3(0.0f, 0.0f, 0.0f));
+        modelViewMatrixStack.Rotate(glm::vec3(0.0f, 1.0f, 0.0f), (m_gameTime / 1000) * 0.02f);
+        modelViewMatrixStack.Scale(500.0f);
+        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+        m_pPlanet->Render();
+    modelViewMatrixStack.Pop();
+
+    //Enabling Texture Blending
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    //render track
+    modelViewMatrixStack.Push();
+    pMainProgram->SetUniform("bUseTexture", true);
+    pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+    pMainProgram->SetUniform("matrices.normalMatrix",
+                             m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+    m_pCatmullRom->RenderTrack();
+    modelViewMatrixStack.Pop();
 	// Draw the 2D graphics after the 3D graphics
 	DisplayFrameRate();
 
@@ -363,29 +345,55 @@ void Game::Render()
 // Update method runs repeatedly with the Render method
 void Game::Update()
 {
+    RECT dimensions = m_gameWindow.GetDimensions();
+
+    int width = dimensions.right - dimensions.left;
+    int height = dimensions.bottom - dimensions.top;
+
+    bool playerUpdate = false;
+    switch (m_pCamera->GetViewType()) {
+        case 0: // Third Person
+        {
+            playerUpdate = true;
+            break;
+        }
+        case 1:
+        {
+            playerUpdate = true;
+            break;
+        }
+        case 2:
+        {
+            playerUpdate = false;
+            break;
+        }
+    }
+    float perspective = m_pPlayer->GetSpeed() < 0 ? 0 : m_pPlayer->GetSpeed() * 2.0f;
+    perspective = perspective > 1.2f ? 1.2f : perspective;
+    m_pCamera->SetPerspectiveProjectionMatrix(45.0f + perspective, (float)width / (float)height, 0.5f, 5000.0f);
+
+    m_pPlayer->Update(m_dt, m_pCatmullRom->GetTrackWidth() * 0.5f, playerUpdate);
+    m_currentDistance += m_pPlayer->GetSpeed();
+    glm::vec3 playerPosition;
+    m_pCatmullRom->Sample(m_currentDistance, playerPosition);
+    glm::vec3 playerPositionNext;
+    m_pCatmullRom->Sample(m_currentDistance + 1.0f, playerPositionNext);
+    glm::vec3 T = glm::normalize(playerPositionNext - playerPosition);
+    glm::vec3 look = playerPosition + (T * 10.0f);
+    glm::vec3 up(0, 1, 0);
+    glm::vec3 N = glm::normalize(glm::cross(T, up));
+    glm::vec3 B = glm::normalize(glm::cross(N, T));
+
+
+    glm::mat4 playerOrientation = glm::mat4(glm::mat3(-T, B, -N));
+    m_pPlayer->SetPlayerOrientation(playerOrientation);
+    look += m_pPlayer->GetStrafeVector();
+    playerPosition += m_pPlayer->GetStrafeVector();
+    playerPosition += B * 5.0f;
+    m_pPlayer->Set(playerPosition, look, up);
     switch (m_pCamera->GetViewType()) {
         case 0: // Third Person
             {
-                m_pPlayer->Update(m_dt,m_pCatmullRom->GetTrackWidth() * 0.5f);
-                m_currentDistance += m_pPlayer->GetSpeed();
-                glm::vec3 playerPosition;
-                m_pCatmullRom->Sample(m_currentDistance, playerPosition);
-                glm::vec3 playerPositionNext;
-                m_pCatmullRom->Sample(m_currentDistance + 1.0f, playerPositionNext);
-                glm::vec3 T = glm::normalize(playerPositionNext - playerPosition);
-                glm::vec3 look = playerPosition + (T * 10.0f);
-                glm::vec3 up(0, 1, 0);
-                glm::vec3 N = glm::normalize(glm::cross(T, up));
-                glm::vec3 B = glm::normalize(glm::cross(N, T));
-
-
-                glm::mat4 playerOrientation = glm::mat4(glm::mat3(-T, B, -N));
-                m_pPlayer->SetPlayerOrientation(playerOrientation);
-                look += m_pPlayer->GetStrafeVector();
-                playerPosition += m_pPlayer->GetStrafeVector();
-                playerPosition += B * 5.0f;
-                m_pPlayer->Set(playerPosition, look, up);
-
                 glm::vec3 cameraPosition;
                 glm::vec3 cameraLook = playerPosition + (T * 20.0f * m_pPlayer->GetScale());
                 cameraPosition = playerPosition;
@@ -396,36 +404,18 @@ void Game::Update()
             break;
         case 1: //Top down View
             {
-                m_pPlayer->Update(m_dt, m_pCatmullRom->GetTrackWidth() * 0.5f);
-                m_currentDistance += m_pPlayer->GetSpeed();
-                glm::vec3 playerPosition;
-                m_pCatmullRom->Sample(m_currentDistance, playerPosition);
-                glm::vec3 playerPositionNext;
-                m_pCatmullRom->Sample(m_currentDistance + 1.0f, playerPositionNext);
-                glm::vec3 T = glm::normalize(playerPositionNext - playerPosition);
-                glm::vec3 look = playerPosition + (T * 10.0f);
-                glm::vec3 up(0, 1, 0);
-                glm::vec3 N = glm::normalize(glm::cross(T, up));
-                glm::vec3 B = glm::normalize(glm::cross(N, T));
-
-
-                glm::mat4 playerOrientation = glm::mat4(glm::mat3(-T, B, -N));
-                m_pPlayer->SetPlayerOrientation(playerOrientation);
-                look += m_pPlayer->GetStrafeVector();
-                playerPosition += m_pPlayer->GetStrafeVector();
-                playerPosition += B * 5.0f;
-                m_pPlayer->Set(playerPosition, look, up);
 
                 glm::vec3 cameraPosition;
                 glm::vec3 cameraLook = playerPosition;
                 glm::vec3 cameraUp = T;
                 cameraPosition = playerPosition;
-                cameraPosition += B * 50.0f;
+                cameraPosition += B * 100.0f;
                 m_pCamera->Set(cameraPosition, cameraLook, cameraUp);
             }
             break;
         case 2:
             {
+                m_pCamera->SetPerspectiveProjectionMatrix(45.0f, (float)width / (float)height, 0.5f, 5000.0f);
                 m_pCamera->SetUpVector(glm::vec3(0.0f, 1.0f, 0.0f));
                 m_pCamera->Update(m_dt);
             }
@@ -505,7 +495,8 @@ void Game::DisplayFrameRate()
 		fontProgram->SetUniform("matrices.modelViewMatrix", glm::mat4(1));
 		fontProgram->SetUniform("matrices.projMatrix", m_pCamera->GetOrthographicProjectionMatrix());
 		fontProgram->SetUniform("vColour", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-		m_pFtFont->Render(20, height - 20, 20, "FPS: %d", m_framesPerSecond);
+        m_pFtFont->Print(glm::to_string(m_pCamera->GetPosition()), 20, height - 20, 20);
+		//m_pFtFont->Render(20, height - 20, 20, "FPS: %d", m_framesPerSecond);
 	}
 }
 
@@ -528,7 +519,7 @@ void Game::GameLoop()
 	Update();
 	Render();
 	m_dt = m_pHighResolutionTimer->Elapsed();
-	
+    m_gameTime += m_dt;
 
 }
 
