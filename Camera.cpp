@@ -88,7 +88,7 @@ void CCamera::Strafe(double direction)
 // Advance the camera (forward / backward motion)
 void CCamera::Advance(double direction)
 {
-	float speed = (float) (m_speed * direction) * 30.0f;
+	float speed = (float) (m_speed * direction) * 5.0f;
 
 	glm::vec3 view = glm::normalize(m_view - m_position);
 	m_position = m_position + view * speed;

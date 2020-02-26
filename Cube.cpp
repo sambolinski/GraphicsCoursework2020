@@ -41,68 +41,75 @@ void CCube::Create(string directory, string filename, float width, float height,
     float halfWidth = m_width / 2.0f;
     float halfHeight = m_height / 2.0f;
     float halfDepth = m_depth / 2.0f;
-
     // Vertex positions
-    glm::vec3 cubeVertices[24] = {
-        //Face Bottom
-        glm::vec3(halfWidth, -halfDepth, -halfHeight),
-        glm::vec3(halfWidth, -halfDepth,  halfHeight),
-        glm::vec3(-halfWidth, -halfDepth,  halfHeight),
-        glm::vec3(-halfWidth, -halfDepth, -halfHeight),
-        //Face Left
-        glm::vec3(-halfWidth, -halfDepth,  halfHeight),
-        glm::vec3(-halfWidth,  halfDepth,  halfHeight),
-        glm::vec3(-halfWidth,  halfDepth, -halfHeight),
-        glm::vec3(-halfWidth, -halfDepth, -halfHeight),
-        //Face Front
-        glm::vec3(halfWidth, -halfDepth,  halfHeight),
-        glm::vec3(halfWidth,  halfDepth,  halfHeight),
-        glm::vec3(-halfWidth,  halfDepth,  halfHeight),
-        glm::vec3(-halfWidth, -halfDepth,  halfHeight),
-        //Face Right
-        glm::vec3(halfWidth, -halfDepth, -halfHeight),
-        glm::vec3(halfWidth,  halfDepth, -halfHeight),
-        glm::vec3(halfWidth,  halfDepth,  halfHeight),
-        glm::vec3( halfWidth, -halfDepth,  halfHeight),
-        //Face Behind
-        glm::vec3(-halfWidth, -halfDepth, -halfHeight),
-        glm::vec3(-halfWidth,  halfDepth, -halfHeight),
-        glm::vec3( halfWidth,  halfDepth, -halfHeight),
-        glm::vec3( halfWidth, -halfDepth, -halfHeight),
-        //Face Top
-        glm::vec3(-halfWidth,  halfDepth, -halfHeight),
-        glm::vec3(-halfWidth,  halfDepth,  halfHeight),
-        glm::vec3( halfWidth,  halfDepth,  halfHeight),
-        glm::vec3( halfWidth,  halfDepth, -halfHeight)
+    glm::vec3 cubeVertices[8] = {
+        glm::vec3(-1.0f, -1.0f, -1.0f),
+        glm::vec3( 1.0f, -1.0f, -1.0f),
+        glm::vec3(-1.0f,  1.0f, -1.0f),
+        glm::vec3( 1.0f,  1.0f, -1.0f),
+        glm::vec3(-1.0f, -1.0f,  1.0f),
+        glm::vec3( 1.0f, -1.0f,  1.0f),
+        glm::vec3(-1.0f,  1.0f,  1.0f),
+        glm::vec3( 1.0f,  1.0f,  1.0f),
     };
-    unsigned int cubeIndices[36] = {
+    // Triangle positions
+    glm::vec3 cubeTriangles[36] = {
         //Face Bottom
-        0, 1, 2,
-        0, 2, 3,
+        cubeVertices[0],
+        cubeVertices[1],
+        cubeVertices[5],
+
+        cubeVertices[5],
+        cubeVertices[4],
+        cubeVertices[0],
 
         //Face Left
-        4, 5, 6,
-        4, 6, 7,
+        cubeVertices[1],
+        cubeVertices[3],
+        cubeVertices[7],
+
+        cubeVertices[7],
+        cubeVertices[5],
+        cubeVertices[1],
 
         //Face Front
-        8,  9, 10,
-        8, 10, 11,
+        cubeVertices[6],
+        cubeVertices[4],
+        cubeVertices[5],
+
+        cubeVertices[5],
+        cubeVertices[7],
+        cubeVertices[6],
 
         //Face Right
-        12, 13, 14,
-        12, 14, 15,
+        cubeVertices[0],
+        cubeVertices[4],
+        cubeVertices[6],
+
+        cubeVertices[6],
+        cubeVertices[2],
+        cubeVertices[0],
 
         //Face Behind
-        16, 17, 18,
-        16, 18, 19,
+        cubeVertices[0],
+        cubeVertices[2],
+        cubeVertices[3],
+
+        cubeVertices[3],
+        cubeVertices[1],
+        cubeVertices[0],
 
         //Face Top
-        20, 21, 22,
-        20, 22, 23,
+        cubeVertices[2],
+        cubeVertices[6],
+        cubeVertices[7],
 
+        cubeVertices[7],
+        cubeVertices[3],
+        cubeVertices[2],
     };
     // Texture coordinates
-    glm::vec2 cubeTexCoords[24] =
+    glm::vec2 cubeTexCoords[36] =
     {
         /*
         //Bottom Face
@@ -134,32 +141,49 @@ void CCube::Create(string directory, string filename, float width, float height,
         glm::vec2(0.375f, 0.5f),
         glm::vec2(0.625f, 0.25f),
         glm::vec2(0.625f, 0.5f),
-        */
-        glm::vec2(0.0f, 0.0f),
-        glm::vec2(0.0f, 0.0f),
-        glm::vec2(0.0f, 0.0f),
-        glm::vec2(0.0f, 0.0f),
-        glm::vec2(0.0f, 0.0f),
-        glm::vec2(0.0f, 0.0f),
-        glm::vec2(0.0f, 0.0f),
-        glm::vec2(0.0f, 0.0f),
-        glm::vec2(0.0f, 0.0f),
-        glm::vec2(0.0f, 0.0f),
-        glm::vec2(0.0f, 0.0f),
-        glm::vec2(0.0f, 0.0f),
-        glm::vec2(0.0f, 0.0f),
-        glm::vec2(0.0f, 0.0f),
-        glm::vec2(0.0f, 0.0f),
-        glm::vec2(0.0f, 0.0f),
-        glm::vec2(0.0f, 0.0f),
-        glm::vec2(0.0f, 0.0f),
-        glm::vec2(0.0f, 0.0f),
-        glm::vec2(0.0f, 0.0f),
         //Face Top
         glm::vec2(0.375f, 0.5f),
         glm::vec2(0.375f, 0.25f),
         glm::vec2(0.625f, 0.5f),
         glm::vec2(0.625f, 0.25f)
+        */
+
+        glm::vec2(0.375f, 0.5f),
+        glm::vec2(0.375f, 0.25f),
+        glm::vec2(0.625f, 0.5f),
+        glm::vec2(0.625f, 0.25f),
+        glm::vec2(0.375f, 0.25f),
+        glm::vec2(0.625f, 0.5f),
+        glm::vec2(0.375f, 0.5f),
+        glm::vec2(0.375f, 0.25f),
+        glm::vec2(0.625f, 0.5f),
+        glm::vec2(0.625f, 0.25f),
+        glm::vec2(0.375f, 0.25f),
+        glm::vec2(0.625f, 0.5f),
+        glm::vec2(0.375f, 0.5f),
+        glm::vec2(0.375f, 0.25f),
+        glm::vec2(0.625f, 0.5f),
+        glm::vec2(0.625f, 0.25f),
+        glm::vec2(0.375f, 0.25f),
+        glm::vec2(0.625f, 0.5f),
+        glm::vec2(0.375f, 0.5f),
+        glm::vec2(0.375f, 0.25f),
+        glm::vec2(0.625f, 0.5f),
+        glm::vec2(0.625f, 0.25f),
+        glm::vec2(0.375f, 0.25f),
+        glm::vec2(0.625f, 0.5f),
+        glm::vec2(0.375f, 0.5f),
+        glm::vec2(0.375f, 0.25f),
+        glm::vec2(0.625f, 0.5f),
+        glm::vec2(0.625f, 0.25f),
+        glm::vec2(0.375f, 0.25f),
+        glm::vec2(0.625f, 0.5f),
+        glm::vec2(0.375f, 0.5f),
+        glm::vec2(0.375f, 0.25f),
+        glm::vec2(0.625f, 0.5f),
+        glm::vec2(0.625f, 0.25f),
+        glm::vec2(0.375f, 0.25f),
+        glm::vec2(0.625f, 0.5f),
     };
 
     // Cube normal
@@ -185,14 +209,11 @@ void CCube::Create(string directory, string filename, float width, float height,
 
     // Put the vertex attributes in the VBO
     unsigned int normalCounter = 0;
-    for (unsigned int i = 0; i < 24; i++) {
-        m_vbo.AddVertexData(&cubeVertices[i], sizeof(glm::vec3));
-        m_vbo.AddVertexData(&cubeTexCoords[i], sizeof(glm::vec2));
-        normalCounter += (i % 4 == 0) ? 1 : 0;
-        m_vbo.AddVertexData(&cubeNormals[normalCounter], sizeof(glm::vec3));
-    }
-    for (int i = 0; i < 36; i++) {
-        m_vbo.AddIndexData(&cubeIndices[i], sizeof(unsigned int));
+    for (unsigned int i = 0; i < 36; i++) {
+        m_vbo.AddData(&cubeTriangles[i], sizeof(glm::vec3));
+        m_vbo.AddData(&cubeTexCoords[i], sizeof(glm::vec2));
+        normalCounter += (i % 6 == 0) ? 1 : 0;
+        m_vbo.AddData(&cubeNormals[normalCounter], sizeof(glm::vec3));
     }
 
 
@@ -218,7 +239,7 @@ void CCube::Create(string directory, string filename, float width, float height,
 void CCube::Render() {
     glBindVertexArray(m_vao);
     m_texture.Bind();
-    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
 // Release resources
