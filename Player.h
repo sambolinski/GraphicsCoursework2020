@@ -2,10 +2,10 @@
 
 #include "./include/glm/gtc/matrix_transform.hpp"
 #include "OpenAssetImportMesh.h"
-#include "Sphere.h"
+#include "Isocahedron.h"
 
 class COpenAssetImportMesh;
-class CSphere;
+class CIsocahedron;
 class CPlayer {
 public:
     CPlayer();
@@ -55,7 +55,7 @@ public:
     //-----------------------//
 private:
     COpenAssetImportMesh *m_playerModel;
-    CSphere *m_shieldModel;
+    CIsocahedron *m_shieldModel;
 
     //forward speed
     float m_maxSpeed;

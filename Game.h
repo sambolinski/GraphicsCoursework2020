@@ -21,6 +21,7 @@ class CPlayer;
 class CCube;
 class CSquarePyramid;
 class CCollidable;
+class CIsocahedron;
 class Game {
 private:
 	// Three main methods used in the game.  Initialise runs once, while Update and Render run repeatedly in the game loop.
@@ -44,7 +45,7 @@ private:
     CCube *m_pCube;
     CSquarePyramid *m_pSquarePyramid;
     COpenAssetImportMesh *m_pPlanet;
-
+    CIsocahedron *m_pIsocahedron;
 	// Some other member variables
     vector<CCollidable *> *m_collidableObjects;
 

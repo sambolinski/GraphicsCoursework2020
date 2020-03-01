@@ -42,6 +42,7 @@ Source code drawn from a number of sources and examples, including contributions
 #include "Collidable.h"
 #include "Asteroid.h"
 #include "Powerup.h"
+#include "Isocahedron.h"
 
 // Constructor
 Game::Game()
@@ -62,6 +63,7 @@ Game::Game()
     m_pSquarePyramid = NULL;
     m_pPlanet = NULL;
     m_collidableObjects = NULL;
+    m_pIsocahedron = NULL;
 
 	m_dt = 0.0;
 	m_framesPerSecond = 0;
@@ -87,6 +89,7 @@ Game::~Game()
     delete m_pCube;
     delete m_pSquarePyramid;
     delete m_pPlanet;
+    delete m_pIsocahedron;
 
     if (m_collidableObjects != NULL) {
         for (unsigned int i = 0; i < m_collidableObjects->size(); i++)
@@ -126,6 +129,7 @@ void Game::Initialise()
     m_pCube = new CCube;
     m_pSquarePyramid = new CSquarePyramid;
     m_pPlanet = new COpenAssetImportMesh;
+    m_pIsocahedron = new CIsocahedron;
     m_collidableObjects = new vector <CCollidable *>;
 
 	RECT dimensions = m_gameWindow.GetDimensions();
@@ -209,8 +213,9 @@ void Game::Initialise()
     m_pSquarePyramid->Create("resources\\textures\\", "pyramid.jpg", 11.0f, 11.0f, 10.0f, 1.0f); //Texture by me
 
     m_pPlanet->Load("resources\\models\\Planet\\Planet.obj"); //made using blender
+    m_pIsocahedron->Create("resources\\textures\\", "ShieldGreen.png");
 
-    //Creating and initialising objects
+    //Creating and initialising collidables
     unsigned int numberCollidables = 15;
     //Order = Obstacle Static, Obstacle Dynamic, Powerup Shield, Powerup Boost
     for (unsigned int i = 0; i < numberCollidables; i++) {
@@ -407,9 +412,12 @@ void Game::Render()
     modelViewMatrixStack.Pop();
 
 
+
+
     //Enabling Texture Blending
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
 
     //render track
     modelViewMatrixStack.Push();
@@ -420,13 +428,24 @@ void Game::Render()
     m_pCatmullRom->RenderTrack();
     modelViewMatrixStack.Pop();
 
-    //Render player
+    
+    //render isocahedron
+    modelViewMatrixStack.Push();
+    pMainProgram->SetUniform("bUseTexture", true);
+    modelViewMatrixStack.Translate(glm::vec3(440, -390, -1550));
+    modelViewMatrixStack.Scale(10.0f);
+    pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+    pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+    m_pIsocahedron->Render();
+    modelViewMatrixStack.Pop();
+    
+    //Render player Shield
     modelViewMatrixStack.Push();
         pMainProgram->SetUniform("bUseTexture", true);
         modelViewMatrixStack.Translate(m_pPlayer->GetPosition());
         modelViewMatrixStack *= m_pPlayer->GetPlayerOrientation();
         modelViewMatrixStack.Rotate(glm::vec3(1.0f, 0.0f, 0.0f), -m_pPlayer->GetSideSpeed() * 0.4f);
-        modelViewMatrixStack.Scale(m_pPlayer->GetScale() * 5.0f);
+        modelViewMatrixStack.Scale(m_pPlayer->GetScale() * 4.0f);
         pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
         pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
         m_pPlayer->RenderShield();

@@ -35,6 +35,7 @@ void CIsocahedron::Create(string directory, string filename) {
     m_vbo.Bind();
 
     // Vertex positions
+    //Uses vertices from this post https://stackoverflow.com/questions/20850279/incorrectly-rendering-isocahedron-in-opengl. 
     glm::vec3 isocahedronVertices[12] = {
         glm::vec3( 0.851f, 0.526f, 0.000f), //0
         glm::vec3(-0.851f, 0.526f, 0.000f), //1
@@ -50,101 +51,114 @@ void CIsocahedron::Create(string directory, string filename) {
         glm::vec3( 0.000f,-0.851f,-0.526f), //11
     };
     // Triangle positions
-    glm::vec3 isocahedronTriangles[36] = {
+    glm::vec3 isocahedronTriangles[60] = {
+        isocahedronVertices[0],
+        isocahedronVertices[10],
         isocahedronVertices[8],
+        
+        isocahedronVertices[8],
+        isocahedronVertices[10],
+        isocahedronVertices[1],
+
         isocahedronVertices[1],
         isocahedronVertices[10],
         isocahedronVertices[7],
+
+        isocahedronVertices[7],
+        isocahedronVertices[10],
+        isocahedronVertices[5],
+
+        isocahedronVertices[10],
+        isocahedronVertices[0],
+        isocahedronVertices[5],
+
         isocahedronVertices[5],
         isocahedronVertices[0],
+        isocahedronVertices[2],
+
+        isocahedronVertices[2],
+        isocahedronVertices[0],
+        isocahedronVertices[4],
+
+        isocahedronVertices[0],
         isocahedronVertices[8],
+        isocahedronVertices[4],
+
+        isocahedronVertices[8],
+        isocahedronVertices[6],
+        isocahedronVertices[4],
+
+        //mark
+        isocahedronVertices[8],
+        isocahedronVertices[1],
+        isocahedronVertices[6],
+
+        isocahedronVertices[6],
+        isocahedronVertices[1],
+        isocahedronVertices[3],
+
+        isocahedronVertices[3],
+        isocahedronVertices[1],
+        isocahedronVertices[7],
+
+        isocahedronVertices[3],
+        isocahedronVertices[7],
+        isocahedronVertices[11],
+
+        isocahedronVertices[11],
+        isocahedronVertices[7],
+        isocahedronVertices[5],
+
+        isocahedronVertices[11],
+        isocahedronVertices[5],
+        isocahedronVertices[2],
+
+        //mark2
+        isocahedronVertices[11],
+        isocahedronVertices[2],
+        isocahedronVertices[9],
+
+        isocahedronVertices[2],
+        isocahedronVertices[4],
+        isocahedronVertices[9],
+
+        isocahedronVertices[4],
+        isocahedronVertices[6],
+        isocahedronVertices[9],
+
+        isocahedronVertices[6],
+        isocahedronVertices[3],
+        isocahedronVertices[9],
+
+        isocahedronVertices[3],
+        isocahedronVertices[11],
+        isocahedronVertices[9],
+
     };
     // Texture coordinates
-    glm::vec2 isocahedronTextureCoordinates[36] =
+    glm::vec2 isocahedronTextureCoordinates[3] =
     {
-        //Bottom Face
-        glm::vec2(0.375f, 0.0f),
-        glm::vec2(0.625f, 0.0f),
-        glm::vec2(0.625f, 0.25f),
-
-        glm::vec2(0.625f, 0.25f),
-        glm::vec2(0.375f, 0.25f),
-        glm::vec2(0.375f, 0.0f),
-
-        //Face Left
-        glm::vec2(0.875f, 0.750f),
-        glm::vec2(0.625f, 0.750f),
-        glm::vec2(0.625f, 0.50f),
-
-        glm::vec2(0.625f, 0.50f),
-        glm::vec2(0.875f, 0.50f),
-        glm::vec2(0.875f, 0.750f),
-
-        //Face Front
-        glm::vec2(0.375f, 0.5f),
-        glm::vec2(0.375f, 0.25f),
-        glm::vec2(0.625f, 0.25f),
-
-        glm::vec2(0.625f, 0.25f),
-        glm::vec2(0.625f, 0.50f),
-        glm::vec2(0.375f, 0.5f),
-
-        //Face Right
-        glm::vec2(0.125f, 0.750f),
-        glm::vec2(0.125f, 0.500f),
-        glm::vec2(0.375f, 0.500f),
-
-        glm::vec2(0.375f, 0.500f),
-        glm::vec2(0.375f, 0.750f),
-        glm::vec2(0.125f, 0.750f),
-
-        //Face behind
-        glm::vec2(0.375f, 1.0f),
-        glm::vec2(0.375f, 0.75f),
-        glm::vec2(0.625f, 0.75f),
-
-        glm::vec2(0.625f, 0.75f),
-        glm::vec2(0.625f, 1.0f),
-        glm::vec2(0.375f, 1.0f),
-
-        //Face Top
-        glm::vec2(0.375f, 0.750f),
-        glm::vec2(0.375f, 0.5f),
-        glm::vec2(0.625f, 0.5f),
-
-        glm::vec2(0.625f, 0.5f),
-        glm::vec2(0.625f, 0.75f),
-        glm::vec2(0.375f, 0.75f),
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(1.0f, 0.0f),
+        glm::vec2(0.5f, 0.864f),
     };
 
     // Isocahedron normal
-    glm::vec3 cubeNormals[6] = {
-        //Bottom Face
-        glm::vec3(0.0f, -1.0f, 0.0f),
-
-        //Left Face
-        glm::vec3(1.0f, 0.0f, 0.0f),
-
-        //Front Face
-        glm::vec3(0.0f, 0.0f, 1.0f),
-
-        //Right face
-        glm::vec3(-1.0f, 0.0f, 0.0f),
-
-        //Behind Face
-        glm::vec3(0.0f, 0.0f, -1.0f),
-
-        //Top Face
-        glm::vec3(0.0f, 1.0f,  0.0f),
-    };
+    glm::vec3 isocahedronNormals[20];
+    for (unsigned int i = 0; i < 20; i++) {
+        glm::vec3 A = isocahedronTriangles[(i * 3)];
+        glm::vec3 B = isocahedronTriangles[(i * 3)+1];
+        glm::vec3 C = isocahedronTriangles[(i * 3)+2];
+        isocahedronNormals[i] = glm::normalize(glm::cross(B-A, C-A));
+    }
 
     // Put the vertex attributes in the VBO
     unsigned int normalCounter = 0;
-    for (unsigned int i = 0; i < 36; i++) {
+    for (unsigned int i = 0; i < 60; i++) {
         m_vbo.AddData(&isocahedronTriangles[i], sizeof(glm::vec3));
-        m_vbo.AddData(&isocahedronTextureCoordinates[i], sizeof(glm::vec2));
-        normalCounter += (i % 6 == 0) ? 1 : 0;
-        m_vbo.AddData(&cubeNormals[normalCounter], sizeof(glm::vec3));
+        m_vbo.AddData(&isocahedronTextureCoordinates[i%3], sizeof(glm::vec2));
+        normalCounter += (i % 3 == 0) ? 1 : 0;
+        m_vbo.AddData(&isocahedronNormals[normalCounter], sizeof(glm::vec3));
     }
 
 
@@ -170,7 +184,7 @@ void CIsocahedron::Create(string directory, string filename) {
 void CIsocahedron::Render() {
     glBindVertexArray(m_vao);
     m_texture.Bind();
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glDrawArrays(GL_TRIANGLES, 0, 60);
 }
 
 // Release resources
