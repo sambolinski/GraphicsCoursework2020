@@ -15,9 +15,9 @@ void CSkybox::Create(float size)
 {
     //Skybox 1
     
-    m_cubemapTexture.Create("resources\\skyboxes\\kurt\\space_rt.png", "resources\\skyboxes\\kurt\\space_lf.png",
-                            "resources\\skyboxes\\kurt\\space_up.png", "resources\\skyboxes\\kurt\\space_dn.png",
-                            "resources\\skyboxes\\kurt\\space_bk.png", "resources\\skyboxes\\kurt\\space_ft.png"); //Downloaded from https://opengameart.org/content/space-skybox-1 by 20/02/2020
+    m_cubemapTexture.Create("resources\\skyboxes\\Sam\\space_rt.png", "resources\\skyboxes\\Sam\\space_lf.png",
+                            "resources\\skyboxes\\Sam\\space_up.png", "resources\\skyboxes\\Sam\\space_dn.png",
+                            "resources\\skyboxes\\Sam\\space_bk.png", "resources\\skyboxes\\Sam\\space_ft.png"); //Made by me using Blender
     
     //Skybox 2
     /*

@@ -24,7 +24,7 @@ public:
 
     //originally bool Sample(float d, glm::vec3 &p, glm::vec3 &up = glm::vec3(0, 0, 0));
 	bool Sample(float d, glm::vec3 &p, glm::vec3 up = glm::vec3(0, 0, 0)); // Return a point on the centreline based on a certain distance along the control curve.
-
+    float &GetTrackLength() { return m_distances.back(); }
     float &GetTrackWidth() { return m_trackWidth; }
 
     vector<glm::vec3> &GetControlPoints() { return m_controlPoints; }

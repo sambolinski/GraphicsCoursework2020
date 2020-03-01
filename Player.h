@@ -2,8 +2,10 @@
 
 #include "./include/glm/gtc/matrix_transform.hpp"
 #include "OpenAssetImportMesh.h"
+#include "Sphere.h"
 
 class COpenAssetImportMesh;
+class CSphere;
 class CPlayer {
 public:
     CPlayer();
@@ -16,8 +18,8 @@ public:
     void Decelerate(float acceleration, double &dt);
     void AccelerateSide(float acceleration, double &dt);
     void DecelerateSide(float acceleration, double &dt);
-    void Turn(float direction, double &dt);
     void Render();
+    void RenderShield();
 
     glm::vec3 &GetPosition() { return m_position; }
     glm::vec3 &GetView() { return m_view; }
@@ -31,10 +33,20 @@ public:
     float &GetSideSpeed() { return m_sideSpeed; }
     void SetView(glm::vec3 view) { m_view = view; }
     glm::mat4 &GetPlayerOrientation() { return m_playerOrientation; }
-    void SetPlayerOrientation(glm::mat4 playerOrientation) { m_playerOrientation = playerOrientation; };
+    void SetPlayerOrientation(glm::mat4 playerOrientation) { m_playerOrientation = playerOrientation; }
+    float &GetBoost() { return m_boost; }
+    unsigned int &GetNumBoost() { return m_numBoosts; }
+    unsigned int &GetHealth() { return m_health; }
+    bool &GetShield() { return m_shield; }
+    void ActivateShield() { m_shield = true; }
+    void DeactivateShield() { m_shield = false; }
+    void IncrementBoost() { m_numBoosts + 1 < 2?m_numBoosts++:1; };
+    void ActivateBoost();
+    void BoostAcceleration(double &maxBoostTime, double dt);
+    void Reset();
+    void TakeDamage();
 
-    //used from Camera.h
-    void RotateViewPoint(float angle, const glm::vec3 &viewPoint);
+    //used from Camera.h but updated for player
     void TranslateByKeyboard(double dt);
     void Advance();
     void Strafe(double max);
@@ -43,16 +55,32 @@ public:
     //-----------------------//
 private:
     COpenAssetImportMesh *m_playerModel;
+    CSphere *m_shieldModel;
 
     //forward speed
     float m_maxSpeed;
+    float m_minSpeed;
     float m_speed;
     //sideways speed
     float m_maxSideSpeed;
     float m_sideSpeed;
+
     float m_acceleration;
 
     float m_sideAmount = 0;
+
+    //powerups
+        //Boost
+    unsigned int m_numBoosts;
+    float m_boost;
+    bool m_isBoosting;
+    float m_boostAcceleration;
+    double m_timeBoosting;
+        //Shield
+    bool m_shield;
+
+    //health
+    unsigned int m_health;
     glm::vec3 m_position;
     glm::vec3 m_view;
     glm::vec3 m_upVector;

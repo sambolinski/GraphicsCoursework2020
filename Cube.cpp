@@ -43,14 +43,14 @@ void CCube::Create(string directory, string filename, float width, float height,
     float halfDepth = m_depth / 2.0f;
     // Vertex positions
     glm::vec3 cubeVertices[8] = {
-        glm::vec3(-1.0f, -1.0f, -1.0f),
-        glm::vec3( 1.0f, -1.0f, -1.0f),
-        glm::vec3(-1.0f,  1.0f, -1.0f),
-        glm::vec3( 1.0f,  1.0f, -1.0f),
-        glm::vec3(-1.0f, -1.0f,  1.0f),
-        glm::vec3( 1.0f, -1.0f,  1.0f),
-        glm::vec3(-1.0f,  1.0f,  1.0f),
-        glm::vec3( 1.0f,  1.0f,  1.0f),
+        glm::vec3(-1.0f, -1.0f, -1.0f), //0
+        glm::vec3( 1.0f, -1.0f, -1.0f), //1
+        glm::vec3(-1.0f,  1.0f, -1.0f), //2
+        glm::vec3( 1.0f,  1.0f, -1.0f), //3
+        glm::vec3(-1.0f, -1.0f,  1.0f), //4
+        glm::vec3( 1.0f, -1.0f,  1.0f), //5
+        glm::vec3(-1.0f,  1.0f,  1.0f), //6
+        glm::vec3( 1.0f,  1.0f,  1.0f), //7
     };
     // Triangle positions
     glm::vec3 cubeTriangles[36] = {
@@ -111,100 +111,80 @@ void CCube::Create(string directory, string filename, float width, float height,
     // Texture coordinates
     glm::vec2 cubeTexCoords[36] =
     {
-        /*
         //Bottom Face
-        glm::vec2(0.625f, 0.25f),
+        glm::vec2(0.375f, 0.0f),
         glm::vec2(0.625f, 0.0f),
+        glm::vec2(0.625f, 0.25f),
+
+        glm::vec2(0.625f, 0.25f),
         glm::vec2(0.375f, 0.25f),
         glm::vec2(0.375f, 0.0f),
 
         //Face Left
-        glm::vec2(0.375f, 0.50f),
-        glm::vec2(0.125f, 0.50f),
-        glm::vec2(0.375f, 0.75f),
-        glm::vec2(0.125f, 0.75f),
+        glm::vec2(0.875f, 0.750f),
+        glm::vec2(0.625f, 0.750f),
+        glm::vec2(0.625f, 0.50f),
+
+        glm::vec2(0.625f, 0.50f),
+        glm::vec2(0.875f, 0.50f),
+        glm::vec2(0.875f, 0.750f),
 
         //Face Front
-        glm::vec2(0.375f, 0.75f),
-        glm::vec2(0.375f, 1.0f),
-        glm::vec2(0.625f, 0.75f),
-        glm::vec2(0.625f, 1.0f),
+        glm::vec2(0.375f, 0.5f),
+        glm::vec2(0.375f, 0.25f),
+        glm::vec2(0.625f, 0.25f),
+
+        glm::vec2(0.625f, 0.25f),
+        glm::vec2(0.625f, 0.50f),
+        glm::vec2(0.375f, 0.5f),
 
         //Face Right
-        glm::vec2(0.625f, 0.5f),
-        glm::vec2(0.625f, 0.75f),
-        glm::vec2(0.875f, 0.5f),
-        glm::vec2(0.875f, 0.75f),
+        glm::vec2(0.125f, 0.750f),
+        glm::vec2(0.125f, 0.500f),
+        glm::vec2(0.375f, 0.500f),
+
+        glm::vec2(0.375f, 0.500f),
+        glm::vec2(0.375f, 0.750f),
+        glm::vec2(0.125f, 0.750f),
 
         //Face behind
-        glm::vec2(0.375f, 0.25f),
-        glm::vec2(0.375f, 0.5f),
-        glm::vec2(0.625f, 0.25f),
-        glm::vec2(0.625f, 0.5f),
-        //Face Top
-        glm::vec2(0.375f, 0.5f),
-        glm::vec2(0.375f, 0.25f),
-        glm::vec2(0.625f, 0.5f),
-        glm::vec2(0.625f, 0.25f)
-        */
+        glm::vec2(0.375f, 1.0f),
+        glm::vec2(0.375f, 0.75f),
+        glm::vec2(0.625f, 0.75f),
 
+        glm::vec2(0.625f, 0.75f),
+        glm::vec2(0.625f, 1.0f),
+        glm::vec2(0.375f, 1.0f),
+
+        //Face Top
+        glm::vec2(0.375f, 0.750f),
         glm::vec2(0.375f, 0.5f),
-        glm::vec2(0.375f, 0.25f),
         glm::vec2(0.625f, 0.5f),
-        glm::vec2(0.625f, 0.25f),
-        glm::vec2(0.375f, 0.25f),
+
         glm::vec2(0.625f, 0.5f),
-        glm::vec2(0.375f, 0.5f),
-        glm::vec2(0.375f, 0.25f),
-        glm::vec2(0.625f, 0.5f),
-        glm::vec2(0.625f, 0.25f),
-        glm::vec2(0.375f, 0.25f),
-        glm::vec2(0.625f, 0.5f),
-        glm::vec2(0.375f, 0.5f),
-        glm::vec2(0.375f, 0.25f),
-        glm::vec2(0.625f, 0.5f),
-        glm::vec2(0.625f, 0.25f),
-        glm::vec2(0.375f, 0.25f),
-        glm::vec2(0.625f, 0.5f),
-        glm::vec2(0.375f, 0.5f),
-        glm::vec2(0.375f, 0.25f),
-        glm::vec2(0.625f, 0.5f),
-        glm::vec2(0.625f, 0.25f),
-        glm::vec2(0.375f, 0.25f),
-        glm::vec2(0.625f, 0.5f),
-        glm::vec2(0.375f, 0.5f),
-        glm::vec2(0.375f, 0.25f),
-        glm::vec2(0.625f, 0.5f),
-        glm::vec2(0.625f, 0.25f),
-        glm::vec2(0.375f, 0.25f),
-        glm::vec2(0.625f, 0.5f),
-        glm::vec2(0.375f, 0.5f),
-        glm::vec2(0.375f, 0.25f),
-        glm::vec2(0.625f, 0.5f),
-        glm::vec2(0.625f, 0.25f),
-        glm::vec2(0.375f, 0.25f),
-        glm::vec2(0.625f, 0.5f),
+        glm::vec2(0.625f, 0.75f),
+        glm::vec2(0.375f, 0.75f),
     };
 
     // Cube normal
     glm::vec3 cubeNormals[6] = {
         //Bottom Face
-        glm::vec3(0.0f, 1.0f, 0.0f),
+        glm::vec3(0.0f, -1.0f, 0.0f),
 
         //Left Face
         glm::vec3(1.0f, 0.0f, 0.0f),
 
         //Front Face
-        glm::vec3(0.0f, 0.0f, -1.0f),
+        glm::vec3(0.0f, 0.0f, 1.0f),
 
         //Right face
         glm::vec3(-1.0f, 0.0f, 0.0f),
 
         //Behind Face
-        glm::vec3(0.0f, 0.0f, 1.0f),
+        glm::vec3(0.0f, 0.0f, -1.0f),
 
         //Top Face
-        glm::vec3(0.0f, -1.0f,  0.0f),
+        glm::vec3(0.0f, 1.0f,  0.0f),
     };
 
     // Put the vertex attributes in the VBO

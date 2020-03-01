@@ -18,7 +18,8 @@ Source code drawn from a number of sources and examples, including contributions
 
 
 #include "game.h"
-
+#include <random>
+#include <chrono>
 
 // Setup includes
 #include "HighResolutionTimer.h"
@@ -38,6 +39,9 @@ Source code drawn from a number of sources and examples, including contributions
 #include "Player.h"
 #include "Cube.h"
 #include "SquarePyramid.h"
+#include "Collidable.h"
+#include "Asteroid.h"
+#include "Powerup.h"
 
 // Constructor
 Game::Game()
@@ -57,6 +61,7 @@ Game::Game()
     m_pCube = NULL;
     m_pSquarePyramid = NULL;
     m_pPlanet = NULL;
+    m_collidableObjects = NULL;
 
 	m_dt = 0.0;
 	m_framesPerSecond = 0;
@@ -82,6 +87,12 @@ Game::~Game()
     delete m_pCube;
     delete m_pSquarePyramid;
     delete m_pPlanet;
+
+    if (m_collidableObjects != NULL) {
+        for (unsigned int i = 0; i < m_collidableObjects->size(); i++)
+            delete (*m_collidableObjects)[i];
+    }
+    delete m_collidableObjects;
 
 	if (m_pShaderPrograms != NULL) {
 		for (unsigned int i = 0; i < m_pShaderPrograms->size(); i++)
@@ -115,6 +126,7 @@ void Game::Initialise()
     m_pCube = new CCube;
     m_pSquarePyramid = new CSquarePyramid;
     m_pPlanet = new COpenAssetImportMesh;
+    m_collidableObjects = new vector <CCollidable *>;
 
 	RECT dimensions = m_gameWindow.GetDimensions();
 
@@ -145,7 +157,8 @@ void Game::Initialise()
 		shader.LoadShader("resources\\shaders\\"+sShaderFileNames[i], iShaderType);
 		shShaders.push_back(shader);
 	}
-
+    //MultiSampling
+    glEnable(GL_MULTISAMPLE);
 	// Create the main shader program
 	CShaderProgram *pMainProgram = new CShaderProgram;
 	pMainProgram->CreateProgram();
@@ -173,17 +186,6 @@ void Game::Initialise()
 
 	m_pFtFont->LoadSystemFont("arial.ttf", 32);
 	m_pFtFont->SetShaderProgram(pFontProgram);
-
-	// Load some meshes in OBJ format
-	m_pBarrelMesh->Load("resources\\models\\Barrel\\Barrel02.obj");  // Downloaded from http://www.psionicgames.com/?page_id=24 on 24 Jan 2013
-	m_pHorseMesh->Load("resources\\models\\Horse\\Horse2.obj");  // Downloaded from http://opengameart.org/content/horse-lowpoly on 24 Jan 2013
-
-    
-
-	// Create a sphere
-	m_pSphere->Create("resources\\textures\\", "dirtpile01.jpg", 25, 25);  // Texture downloaded from http://www.psionicgames.com/?page_id=26 on 24 Jan 2013
-	glEnable(GL_CULL_FACE);
-
     
 
 	// Initialise audio and play background music
@@ -203,13 +205,82 @@ void Game::Initialise()
     m_pCatmullRom->Sample(1.0f, playerView);
     m_pPlayer->Initialise(playerPosition, playerView); //made using Blender
 
-    //Create the cube;
-    m_pCube->Create("resources\\textures\\", "Powerup2.png", 10.0f, 10.0f, 10.0f, 5.0f);
-
     //Create the squarePyramid
     m_pSquarePyramid->Create("resources\\textures\\", "pyramid.jpg", 11.0f, 11.0f, 10.0f, 1.0f); //Texture by me
 
     m_pPlanet->Load("resources\\models\\Planet\\Planet.obj"); //made using blender
+
+    //Creating and initialising objects
+    unsigned int numberCollidables = 15;
+    //Order = Obstacle Static, Obstacle Dynamic, Powerup Shield, Powerup Boost
+    for (unsigned int i = 0; i < numberCollidables; i++) {
+        float sample = (m_pCatmullRom->GetTrackLength() / (numberCollidables * 1.25)) * (i + 1); //samples obstacles across tracks
+        glm::vec3 position;
+        glm::vec3 positionAhead;
+        m_pCatmullRom->Sample(sample, position);
+        m_pCatmullRom->Sample(sample + 2.0f, positionAhead);
+        glm::vec3 T = glm::normalize(positionAhead - position);
+        glm::vec3 N = glm::normalize(glm::cross(T, glm::vec3(0,1,0)));
+        glm::vec3 B = glm::normalize(glm::cross(N, T));
+
+        //Random Generator http://www.cplusplus.com/reference/random/
+        //https://stackoverflow.com/questions/34490599/c11-how-to-set-seed-using-random
+        std::random_device r;
+        std::default_random_engine generator{r()};
+        std::uniform_real_distribution<float> distribution(-m_pCatmullRom->GetTrackWidth() / 2, m_pCatmullRom->GetTrackWidth() / 2);
+        switch (i%4) {
+            case 1:
+            {
+                float scale = 4.0f;
+                glm::vec3 objectPosition = position + (B * scale);
+                float horizontal = distribution(generator);
+                objectPosition += N * horizontal;
+                CAsteroid *collidable = new CAsteroid;
+                collidable->Initialise(objectPosition, scale, sample, "STATIC");
+                collidable->SetPlayerOrientation(glm::mat4(glm::mat3(-T, B, -N)));
+                collidable->GetTNBFrame().Set(T, N, B);
+                m_collidableObjects->push_back(collidable);
+               
+            }
+            break;
+            case 0:
+            {
+                float scale = 4.0f;
+                glm::vec3 objectPosition = position + (B * scale);
+                CAsteroid *collidable = new CAsteroid;
+                collidable->Initialise(objectPosition, scale, sample, "DYNAMIC");
+                collidable->SetPlayerOrientation(glm::mat4(glm::mat3(-T, B, -N)));
+                collidable->GetTNBFrame().Set(T, N, B);
+                m_collidableObjects->push_back(collidable);
+
+            }
+            break;
+            case 2:
+            {
+                float scale = 3.0f;
+                glm::vec3 objectPosition = position + (B * scale);
+                CPowerup *collidable = new CPowerup;
+                collidable->Initialise(objectPosition, scale, sample, "BOOST");
+                collidable->SetPlayerOrientation(glm::mat4(glm::mat3(-T, B, -N)));
+                collidable->GetTNBFrame().Set(T, N, B);
+                m_collidableObjects->push_back(collidable);
+
+            }
+            break;
+            case 3:
+            {
+                float scale = 3.0f;
+                glm::vec3 objectPosition = position + (B * scale);
+                CPowerup *collidable = new CPowerup;
+                collidable->Initialise(objectPosition, scale, sample, "SHIELD");
+                collidable->SetPlayerOrientation(glm::mat4(glm::mat3(-T, B, -N)));
+                collidable->GetTNBFrame().Set(T, N, B);
+                m_collidableObjects->push_back(collidable);
+
+            }
+            break;
+        }
+    }
 }
 
 // Render method runs repeatedly in a loop
@@ -278,27 +349,7 @@ void Game::Render()
 	pMainProgram->SetUniform("material1.Md", glm::vec3(0.5f));	// Diffuse material reflectance
 	pMainProgram->SetUniform("material1.Ms", glm::vec3(1.0f));	// Specular material reflectance	
 
-    //render player
-    modelViewMatrixStack.Push();
-        pMainProgram->SetUniform("bUseTexture", true);
-        m_pPlayer->GetPosition().y += sin(m_gameTime / 250)*m_pPlayer->GetSpeed() * 0.3f;
-        modelViewMatrixStack.Translate(m_pPlayer->GetPosition());
-        modelViewMatrixStack *= m_pPlayer->GetPlayerOrientation();
-        modelViewMatrixStack.Rotate(glm::vec3(1.0f, 0.0f, 0.0f),-m_pPlayer->GetSideSpeed()* 2.0f);
-        modelViewMatrixStack.Scale(m_pPlayer->GetScale());
-        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-        m_pPlayer->Render();
-    modelViewMatrixStack.Pop();
 
-    // Render the cube
-    modelViewMatrixStack.Push();
-        modelViewMatrixStack.Translate(glm::vec3(600.0f, 0.0f, -1780.0f));
-        modelViewMatrixStack.Scale(2.0f);
-        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-        m_pCube->Render();
-    modelViewMatrixStack.Pop();
 
     // Render the square pyramid
     modelViewMatrixStack.Push();
@@ -321,6 +372,41 @@ void Game::Render()
         m_pPlanet->Render();
     modelViewMatrixStack.Pop();
 
+    //Render the collidables
+    if (m_collidableObjects != NULL) {
+        for (unsigned int i = 0; i < m_collidableObjects->size(); i++) {
+            modelViewMatrixStack.Push();
+                pMainProgram->SetUniform("bUseTexture", true);
+                modelViewMatrixStack.Translate((*m_collidableObjects)[i]->GetPosition());
+                modelViewMatrixStack *= (*m_collidableObjects)[i]->GetPlayerOrientation();
+                glm::vec3 rotationalVector = glm::vec3(0, 0, 0);
+                if ((*m_collidableObjects)[i]->GetType() == "ASTEROID") {
+                    rotationalVector = (*m_collidableObjects)[i]->GetTNBFrame().T;
+                } else if ((*m_collidableObjects)[i]->GetType() == "POWERUP") {
+                    rotationalVector = (*m_collidableObjects)[i]->GetTNBFrame().B;
+                }
+                modelViewMatrixStack.Rotate(rotationalVector, (m_gameTime / 1000));
+                modelViewMatrixStack.Scale((*m_collidableObjects)[i]->GetRadius());
+                pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+                pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+                (*m_collidableObjects)[i]->Render();
+            modelViewMatrixStack.Pop();
+        }
+    }
+    //render player
+    modelViewMatrixStack.Push();
+        pMainProgram->SetUniform("bUseTexture", true);
+        m_pPlayer->GetPosition().y += sin(m_gameTime / 250)*m_pPlayer->GetSpeed() * 0.3f;
+        modelViewMatrixStack.Translate(m_pPlayer->GetPosition());
+        modelViewMatrixStack *= m_pPlayer->GetPlayerOrientation();
+        modelViewMatrixStack.Rotate(glm::vec3(1.0f, 0.0f, 0.0f), -m_pPlayer->GetSideSpeed() * 0.4f);
+        modelViewMatrixStack.Scale(m_pPlayer->GetScale());
+        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+        m_pPlayer->Render();
+    modelViewMatrixStack.Pop();
+
+
     //Enabling Texture Blending
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -332,6 +418,18 @@ void Game::Render()
     pMainProgram->SetUniform("matrices.normalMatrix",
                              m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
     m_pCatmullRom->RenderTrack();
+    modelViewMatrixStack.Pop();
+
+    //Render player
+    modelViewMatrixStack.Push();
+        pMainProgram->SetUniform("bUseTexture", true);
+        modelViewMatrixStack.Translate(m_pPlayer->GetPosition());
+        modelViewMatrixStack *= m_pPlayer->GetPlayerOrientation();
+        modelViewMatrixStack.Rotate(glm::vec3(1.0f, 0.0f, 0.0f), -m_pPlayer->GetSideSpeed() * 0.4f);
+        modelViewMatrixStack.Scale(m_pPlayer->GetScale() * 5.0f);
+        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+        m_pPlayer->RenderShield();
     modelViewMatrixStack.Pop();
 	// Draw the 2D graphics after the 3D graphics
 	DisplayFrameRate();
@@ -368,8 +466,10 @@ void Game::Update()
             break;
         }
     }
-    float perspective = m_pPlayer->GetSpeed() < 0 ? 0 : m_pPlayer->GetSpeed() * 2.0f;
-    perspective = perspective > 1.2f ? 1.2f : perspective;
+
+    //Perspective changes with faster speed
+    float perspective = m_pPlayer->GetSpeed() < 0 ? 0 : m_pPlayer->GetSpeed() * 1.0f;
+    perspective = perspective > 1.0f + ((m_pPlayer->GetBoost()-1) * 0.18f) ? 1.0f + ((m_pPlayer->GetBoost() - 1) * 0.18f) : perspective;
     m_pCamera->SetPerspectiveProjectionMatrix(45.0f + perspective, (float)width / (float)height, 0.5f, 5000.0f);
 
     m_pPlayer->Update(m_dt, m_pCatmullRom->GetTrackWidth() * 0.5f, playerUpdate);
@@ -421,6 +521,8 @@ void Game::Update()
             }
             break;
     }
+    double maxBoost = 3000;
+    m_pPlayer->BoostAcceleration(maxBoost, m_dt);
 	// Update the camera using the amount of time that has elapsed to avoid framerate dependent motion
     /*
     m_currentDistance += m_dt * 0.01f;
@@ -457,12 +559,53 @@ void Game::Update()
 
 	m_pCamera->Set(x, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 	*/
-
+    CheckCollisions();
+    UpdateCollidables();
+    CheckGameOver();
 	m_pAudio->Update();
 }
 
+//Checks if the player has collided with an object
+//For efficiency, a number is kept which knows which obstacle is next on the track which will be used to check collisions isntead of going through every item.
+void Game::CheckCollisions() {
+    bool checked = false;
+    if ((*m_collidableObjects)[m_currentCheck % m_collidableObjects->size()]->CheckCollision(m_pPlayer->GetPosition(),m_pPlayer->GetScale())) {
+        if ((*m_collidableObjects)[m_currentCheck % m_collidableObjects->size()]->GetType() == "ASTEROID") {
+            if (m_pPlayer->GetShield()) {
+                m_pPlayer->DeactivateShield();
+            } else {
+                m_pPlayer->TakeDamage();
+            }
+        } else if ((*m_collidableObjects)[m_currentCheck % m_collidableObjects->size()]->GetType() == "POWERUP") {
+            CPowerup* currentPowerup = dynamic_cast<CPowerup*>((*m_collidableObjects)[m_currentCheck % m_collidableObjects->size()]);
+            if (currentPowerup->GetPowerupType() == "BOOST") {
+                m_pPlayer->IncrementBoost();
+            } else if ((currentPowerup->GetPowerupType() == "SHIELD")) {
+                m_pPlayer->ActivateShield();
+            }
+        }
+        m_currentCheck++;
+        checked = true;
+    }
+    //if there was no collisions, check to see if the player has gone passed the object position, if yes increment the object counter
+    //You have to use the distance depending on the lap as the distance doesn't reset to zero
+    if (!checked) {
+        float currentDistanceNormalised = m_currentDistance - m_pCatmullRom->CurrentLap(m_currentDistance)*m_pCatmullRom->GetTrackLength();
+        if (currentDistanceNormalised >= (*m_collidableObjects)[m_currentCheck % m_collidableObjects->size()]->GetPlacementOnTrack()) {
+            if(currentDistanceNormalised <= (*m_collidableObjects)[m_collidableObjects->size()-1]->GetPlacementOnTrack()){
+                m_currentCheck++;
+            } else {
+                m_currentCheck = 0;
+            }
+        }
+    }
+}
 
-
+void Game::CheckGameOver() {
+    if (m_pPlayer->GetHealth() == 0) {
+        m_paused = true;
+    }
+}
 
 void Game::DisplayFrameRate()
 {
@@ -495,10 +638,18 @@ void Game::DisplayFrameRate()
 		fontProgram->SetUniform("matrices.modelViewMatrix", glm::mat4(1));
 		fontProgram->SetUniform("matrices.projMatrix", m_pCamera->GetOrthographicProjectionMatrix());
 		fontProgram->SetUniform("vColour", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-        m_pFtFont->Print(glm::to_string(m_pCamera->GetPosition()), 20, height - 20, 20);
+        m_pFtFont->Print("Player: " + glm::to_string(m_pPlayer->GetPosition()), 20, height - 20, 20);
+        m_pFtFont->Print("Asteroid: " + glm::to_string((*m_collidableObjects)[0]->GetPosition()),20, height-50,20);
+        m_pFtFont->Print("Camera: " + glm::to_string(m_pCamera->GetPosition()), 20, height - 80, 20);
+        m_pFtFont->Print("Current Check: " +std::to_string(m_currentCheck), 20, height - 110, 20);
+        m_pFtFont->Print("Number of Boosts: " + std::to_string(m_pPlayer->GetNumBoost()), 20, height - 140, 20);
+        m_pFtFont->Print("Health: " + std::to_string(m_pPlayer->GetHealth()), 20, height - 170, 20);
+        //m_pFtFont->Print(std::to_string(m_pPlayer->GetSpeed()), 20, height - 20, 20);
 		//m_pFtFont->Render(20, height - 20, 20, "FPS: %d", m_framesPerSecond);
 	}
 }
+
+
 
 // The game loop runs repeatedly until game over
 void Game::GameLoop()
@@ -515,14 +666,47 @@ void Game::GameLoop()
 	
 	
 	// Variable timer
-	m_pHighResolutionTimer->Start();
-	Update();
-	Render();
-	m_dt = m_pHighResolutionTimer->Elapsed();
+    m_pHighResolutionTimer->Start();
+    Update();
+    Render();
+    m_dt = m_pHighResolutionTimer->Elapsed();
     m_gameTime += m_dt;
 
 }
 
+void Game::UpdateCollidables() {
+    if (m_collidableObjects != NULL) {
+        for (unsigned int i = 0; i < m_collidableObjects->size(); i++) {
+            if ((*m_collidableObjects)[i]->GetType() == "ASTEROID") {
+                CAsteroid* currentAsteroid = dynamic_cast<CAsteroid*>((*m_collidableObjects)[i]);
+                if (currentAsteroid->GetAsteroidType() == "DYNAMIC") {
+                    //This method only works if using track centre then adding sin value
+                    int multiplier = (i * 100) < 500 ? (i * 100) : 500; //double speed of base speed is max
+                    glm::vec3 newPosition = ((float)(sin(m_gameTime / (1000-multiplier)))- (float)(sin(currentAsteroid->GetPreviousGameTime() / (1000-multiplier)))) * currentAsteroid->GetTNBFrame().N * m_pCatmullRom->GetTrackWidth() * 0.5f;
+
+                    currentAsteroid->SetPosition(newPosition+currentAsteroid->GetPosition());
+                    currentAsteroid->SetPreviousGameTime(m_gameTime);
+                }
+            } else if ((*m_collidableObjects)[i]->GetType() == "POWERUP") {
+                CPowerup* currentPowerup = dynamic_cast<CPowerup*>((*m_collidableObjects)[i]);
+                //This method only works if using track centre then adding sin value
+                int multiplier = (i * 100) < 500 ? (i * 100) : 500; //double speed of base speed is max
+                glm::vec3 newPosition = ((float)(sin(m_gameTime / (1000 - multiplier))) - (float)(sin(currentPowerup->GetPreviousGameTime() / (1000 - multiplier)))) * currentPowerup->GetTNBFrame().N * m_pCatmullRom->GetTrackWidth() * 0.5f;
+
+                currentPowerup->SetPosition(newPosition + currentPowerup->GetPosition());
+                currentPowerup->SetPreviousGameTime(m_gameTime);
+                
+            }
+        }
+    }
+}
+
+void Game::Reset() {
+    m_paused = false;
+    m_currentDistance = 0;
+    m_currentCheck = 0;
+    m_pPlayer->Reset();
+}
 
 WPARAM Game::Execute() 
 {
@@ -549,7 +733,9 @@ WPARAM Game::Execute()
 			TranslateMessage(&msg);	
 			DispatchMessage(&msg);
 		} else if (m_appActive) {
-			GameLoop();
+            if (!m_paused) {
+                GameLoop();
+            }
 		} 
 		else Sleep(200); // Do not consume processor power if application isn't active
 	}
@@ -596,20 +782,31 @@ LRESULT Game::ProcessEvents(HWND window,UINT message, WPARAM w_param, LPARAM l_p
 
 	case WM_KEYDOWN:
 		switch(w_param) {
-		case VK_ESCAPE:
-			PostQuitMessage(0);
-			break;
-		case '1':
-			m_pAudio->PlayEventSound();
-			break;
-        //added case to cycle camera view type
-        case 0x50: //P key
-            m_pCamera->CycleViewType();
-            break;
-        case 0x4C: //L key
-            {
-                m_pCamera->SetViewType(2);
-            }
+		    case VK_ESCAPE:
+			    PostQuitMessage(0);
+			    break;
+		    case '1':
+			    m_pAudio->PlayEventSound();
+			    break;
+            //added case to cycle camera view type
+            case 0x50: //P key
+                m_pCamera->CycleViewType();
+                break;
+            case 0x4C: //L key
+                {
+                    m_pCamera->SetViewType(2);
+                }
+                break;
+            case 0x20: //space key
+                {
+                    m_paused = m_paused == true? false: true;
+                }
+                break;
+            case 0x52: //R key
+                {
+                    Reset();
+                }
+                break;
 		}
 		break;
 

@@ -20,7 +20,7 @@ class CCatmullRom;
 class CPlayer;
 class CCube;
 class CSquarePyramid;
-
+class CCollidable;
 class Game {
 private:
 	// Three main methods used in the game.  Initialise runs once, while Update and Render run repeatedly in the game loop.
@@ -46,6 +46,8 @@ private:
     COpenAssetImportMesh *m_pPlanet;
 
 	// Some other member variables
+    vector<CCollidable *> *m_collidableObjects;
+
     float m_currentDistance;
 	double m_dt;
 	int m_framesPerSecond;
@@ -62,12 +64,18 @@ public:
 
 private:
 	static const int FPS = 60;
+    int m_currentCheck = 0;
+    void CheckCollisions();
 	void DisplayFrameRate();
 	void GameLoop();
+    void UpdateCollidables();
+    void CheckGameOver();
+    void Reset();
 	GameWindow m_gameWindow;
 	HINSTANCE m_hInstance;
 	int m_frameCount;
 	double m_elapsedTime;
     double m_gameTime;
+    bool m_paused = false;
 
 };
