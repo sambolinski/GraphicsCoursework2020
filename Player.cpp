@@ -35,7 +35,7 @@ void CPlayer::Initialise(glm::vec3 position, glm::vec3 view) {
     m_playerModel = new COpenAssetImportMesh;
     m_playerModel->Load("resources\\models\\Saucer\\Saucer.obj");
     m_shieldModel = new CIsocahedron;
-    m_shieldModel->Create("resources\\textures\\", "ShieldBlue.png");
+    m_shieldModel->Create("resources\\textures\\", "ShieldGreen.png");
     m_maxSpeed = 0.045 * 20.0f; //laptop  = *2, pc = *10
     m_minSpeed = m_maxSpeed * 0.5f;
     m_maxSideSpeed = 0.045f * 10;
