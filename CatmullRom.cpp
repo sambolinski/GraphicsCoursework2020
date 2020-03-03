@@ -187,7 +187,7 @@ void CCatmullRom::CreateCentreline()
 	// Call Set Control Points
     SetControlPoints();
 	// Call UniformlySampleControlPoints with the number of samples required
-    UniformlySampleControlPoints(1000);
+    UniformlySampleControlPoints(500);
 	// Create a VAO called m_vaoCentreline and a VBO to get the points onto the graphics card
     glGenVertexArrays(1, &m_vaoCentreline);
     glBindVertexArray(m_vaoCentreline);

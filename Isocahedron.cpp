@@ -144,21 +144,22 @@ void CIsocahedron::Create(string directory, string filename) {
     };
 
     // Isocahedron normal
-    glm::vec3 isocahedronNormals[20];
+    glm::vec3 isocahedronNormals[60];
     for (unsigned int i = 0; i < 20; i++) {
         glm::vec3 A = isocahedronTriangles[(i * 3)];
         glm::vec3 B = isocahedronTriangles[(i * 3)+1];
         glm::vec3 C = isocahedronTriangles[(i * 3)+2];
-        isocahedronNormals[i] = glm::normalize(glm::cross(B-A, C-A));
+        glm::vec3 normal = glm::normalize(glm::cross(B - A, C - A));
+        isocahedronNormals[i] = normal;
+        isocahedronNormals[i+1] = normal;
+        isocahedronNormals[i+2] = normal;
     }
 
     // Put the vertex attributes in the VBO
-    unsigned int normalCounter = 0;
     for (unsigned int i = 0; i < 60; i++) {
         m_vbo.AddData(&isocahedronTriangles[i], sizeof(glm::vec3));
         m_vbo.AddData(&isocahedronTextureCoordinates[i%3], sizeof(glm::vec2));
-        normalCounter += (i % 3 == 0) ? 1 : 0;
-        m_vbo.AddData(&isocahedronNormals[normalCounter], sizeof(glm::vec3));
+        m_vbo.AddData(&isocahedronNormals[i], sizeof(glm::vec3));
     }
 
 

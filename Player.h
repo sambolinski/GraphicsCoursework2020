@@ -48,7 +48,7 @@ public:
 
     //used from Camera.h but updated for player
     void TranslateByKeyboard(double dt);
-    void Advance();
+    void Advance(double dt);
     void Strafe(double max);
     void Update(double dt, double max, bool playerUpdate);
     void Set(glm::vec3 &position, glm::vec3 &viewpoint, glm::vec3 &upVector);

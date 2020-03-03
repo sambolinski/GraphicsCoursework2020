@@ -83,9 +83,9 @@ void CPlayer::DecelerateSide(float acceleration, double &dt) {
     }
 }
 
-void CPlayer::Advance() {
+void CPlayer::Advance(double dt) {
     glm::vec3 view = glm::normalize(m_view - m_position);
-    m_position = m_position + view * m_speed;
+    m_position = m_position + view * (m_speed * (float)dt);
     m_view = m_view + view * m_speed;
 
 }
@@ -110,7 +110,7 @@ void CPlayer::Update(double dt, double max, bool playerUpdate) {
     if (m_boost > 1.0f) {
         m_timeBoosting += dt;
     }
-    Advance();
+    Advance(dt);
     Strafe(max);
 }
 void CPlayer::Strafe( double max) {

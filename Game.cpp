@@ -295,6 +295,7 @@ void Game::Render()
 	// Clear the buffers and enable depth testing (z-buffering)
 	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
 
 	// Set up a matrix stack
 	glutil::MatrixStack modelViewMatrixStack;
@@ -318,10 +319,10 @@ void Game::Render()
 
 	
 	// Set light and materials in main shader program
-	glm::vec4 lightPosition1 = glm::vec4(-100, 100, -100, 1); // Position of light source *in world coordinates*
+	glm::vec4 lightPosition1 = glm::vec4(600, 250, -2300, 1); // Position of light source *in world coordinates*
 	pMainProgram->SetUniform("light1.position", viewMatrix*lightPosition1); // Position of light source *in eye coordinates*
-	pMainProgram->SetUniform("light1.La", glm::vec3(1.0f));		// Ambient colour of light
-	pMainProgram->SetUniform("light1.Ld", glm::vec3(1.0f));		// Diffuse colour of light
+	pMainProgram->SetUniform("light1.La", glm::vec3(0.3f));		// Ambient colour of light
+	pMainProgram->SetUniform("light1.Ld", glm::vec3(1.5f));		// Diffuse colour of light
 	pMainProgram->SetUniform("light1.Ls", glm::vec3(1.0f));		// Specular colour of light
 	pMainProgram->SetUniform("material1.Ma", glm::vec3(1.0f));	// Ambient material reflectance
 	pMainProgram->SetUniform("material1.Md", glm::vec3(0.0f));	// Diffuse material reflectance
@@ -421,22 +422,21 @@ void Game::Render()
 
     //render track
     modelViewMatrixStack.Push();
-    pMainProgram->SetUniform("bUseTexture", true);
-    pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-    pMainProgram->SetUniform("matrices.normalMatrix",
-                             m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-    m_pCatmullRom->RenderTrack();
+        pMainProgram->SetUniform("bUseTexture", true);
+        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+        m_pCatmullRom->RenderTrack();
     modelViewMatrixStack.Pop();
 
     
     //render isocahedron
     modelViewMatrixStack.Push();
-    pMainProgram->SetUniform("bUseTexture", true);
-    modelViewMatrixStack.Translate(glm::vec3(440, -390, -1550));
-    modelViewMatrixStack.Scale(10.0f);
-    pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-    pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-    m_pIsocahedron->Render();
+        pMainProgram->SetUniform("bUseTexture", true);
+        modelViewMatrixStack.Translate(glm::vec3(440, -390, -1550));
+        modelViewMatrixStack.Scale(10.0f);
+        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+        m_pIsocahedron->Render();
     modelViewMatrixStack.Pop();
     
     //Render player Shield
