@@ -85,7 +85,7 @@ void CPlayer::DecelerateSide(float acceleration, double &dt) {
 
 void CPlayer::Advance(double dt) {
     glm::vec3 view = glm::normalize(m_view - m_position);
-    m_position = m_position + view * (m_speed * (float)dt);
+    m_position = m_position + view * (m_speed * (float)dt * 0.1f);
     m_view = m_view + view * m_speed;
 
 }

@@ -492,7 +492,7 @@ void Game::Update()
     m_pCamera->SetPerspectiveProjectionMatrix(45.0f + perspective, (float)width / (float)height, 0.5f, 5000.0f);
 
     m_pPlayer->Update(m_dt, m_pCatmullRom->GetTrackWidth() * 0.5f, playerUpdate);
-    m_currentDistance += m_pPlayer->GetSpeed();
+    m_currentDistance += m_pPlayer->GetSpeed() * (float)m_dt * 0.1f;
     glm::vec3 playerPosition;
     m_pCatmullRom->Sample(m_currentDistance, playerPosition);
     glm::vec3 playerPositionNext;
