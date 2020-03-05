@@ -50,7 +50,7 @@ Game::Game()
 	m_pSkybox = NULL;
 	m_pCamera = NULL;
 	m_pShaderPrograms = NULL;
-	m_pPlanarTerrain = NULL;
+	m_pGUI = NULL;
 	m_pFtFont = NULL;
 	m_pBarrelMesh = NULL;
 	m_pHorseMesh = NULL;
@@ -70,6 +70,7 @@ Game::Game()
 	m_frameCount = 0;
 	m_elapsedTime = 0.0f;
     m_currentDistance = 0.0f;
+    m_maxLaps = 0;
 }
 
 // Destructor
@@ -78,7 +79,7 @@ Game::~Game()
 	//game objects
 	delete m_pCamera;
 	delete m_pSkybox;
-	delete m_pPlanarTerrain;
+	delete m_pGUI;
 	delete m_pFtFont;
 	delete m_pBarrelMesh;
 	delete m_pHorseMesh;
@@ -118,7 +119,7 @@ void Game::Initialise()
 	m_pCamera = new CCamera;
 	m_pSkybox = new CSkybox;
 	m_pShaderPrograms = new vector <CShaderProgram *>;
-	m_pPlanarTerrain = new CPlane;
+	m_pGUI = new CPlane;
 	m_pFtFont = new CFreeTypeFont;
 	m_pBarrelMesh = new COpenAssetImportMesh;
 	m_pHorseMesh = new COpenAssetImportMesh;
@@ -137,6 +138,7 @@ void Game::Initialise()
 	int width = dimensions.right - dimensions.left;
 	int height = dimensions.bottom - dimensions.top;
 
+    m_maxLaps = 3;
 	// Set the orthographic and perspective projection matrices based on the image size
 	m_pCamera->SetOrthographicProjectionMatrix(width, height); 
 	m_pCamera->SetPerspectiveProjectionMatrix(45.0f, (float) width / (float) height, 0.5f, 5000.0f);
@@ -148,6 +150,8 @@ void Game::Initialise()
 	sShaderFileNames.push_back("mainShader.frag");
 	sShaderFileNames.push_back("textShader.vert");
 	sShaderFileNames.push_back("textShader.frag");
+    sShaderFileNames.push_back("guiBackgroundShader.vert");
+    sShaderFileNames.push_back("guiBackgroundShader.frag");
 
 	for (int i = 0; i < (int) sShaderFileNames.size(); i++) {
 		string sExt = sShaderFileNames[i].substr((int) sShaderFileNames[i].size()-4, 4);
@@ -161,8 +165,10 @@ void Game::Initialise()
 		shader.LoadShader("resources\\shaders\\"+sShaderFileNames[i], iShaderType);
 		shShaders.push_back(shader);
 	}
+
     //MultiSampling
     glEnable(GL_MULTISAMPLE);
+
 	// Create the main shader program
 	CShaderProgram *pMainProgram = new CShaderProgram;
 	pMainProgram->CreateProgram();
@@ -180,6 +186,14 @@ void Game::Initialise()
 	m_pShaderPrograms->push_back(pFontProgram);
 
 	// You can follow this pattern to load additional shaders
+
+	// Create a shader program for background GUI
+    CShaderProgram *pGUIShader = new CShaderProgram;
+    pGUIShader->CreateProgram();
+    pGUIShader->AddShaderToProgram(&shShaders[4]);
+    pGUIShader->AddShaderToProgram(&shShaders[5]);
+    pGUIShader->LinkProgram();
+    m_pShaderPrograms->push_back(pGUIShader);
 
 	// Create the skybox
 	// Skybox downloaded from https://opengameart.org/content/space-skybox-1
@@ -214,6 +228,9 @@ void Game::Initialise()
 
     m_pPlanet->Load("resources\\models\\Planet\\Planet.obj"); //made using blender
     m_pIsocahedron->Create("resources\\textures\\", "ShieldGreen.png");
+
+    //Create the GUI background
+    m_pGUI->Create("resources\\textures\\", "pyramid.jpg", width, height*0.55f, 1.0f);
 
     //Creating and initialising collidables
     unsigned int numberCollidables = 15;
@@ -342,13 +359,6 @@ void Game::Render()
 		pMainProgram->SetUniform("renderSkybox", false);
 	modelViewMatrixStack.Pop();
 
-	// Render the planar terrain
-	modelViewMatrixStack.Push();
-		pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-		pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-		m_pPlanarTerrain->Render();
-	modelViewMatrixStack.Pop();
-
 
 	// Turn on diffuse + specular materials
 	pMainProgram->SetUniform("material1.Ma", glm::vec3(0.5f));	// Ambient material reflectance
@@ -412,9 +422,6 @@ void Game::Render()
         m_pPlayer->Render();
     modelViewMatrixStack.Pop();
 
-
-
-
     //Enabling Texture Blending
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -450,6 +457,70 @@ void Game::Render()
         pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
         m_pPlayer->RenderShield();
     modelViewMatrixStack.Pop();
+
+
+    CShaderProgram *pGUIShader = (*m_pShaderPrograms)[2];
+    pGUIShader->UseProgram();
+
+
+    RECT dimensions = m_gameWindow.GetDimensions();
+    float height = dimensions.bottom - dimensions.top;
+    float width = dimensions.right - dimensions.left;
+    if (m_displayHUD) {
+        //Render GUI background
+
+        glDisable(GL_DEPTH_TEST);
+        modelViewMatrixStack.Push();
+            modelViewMatrixStack.SetIdentity();            modelViewMatrixStack.Translate(glm::vec3(1.0f, 50.0f, 0.0f));
+            modelViewMatrixStack.Rotate(glm::vec3(1.0f, 0.0f, 0.0f), glm::radians(90.0f));
+            pGUIShader->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+            pGUIShader->SetUniform("matrices.projMatrix", m_pCamera->GetOrthographicProjectionMatrix());
+            pGUIShader->SetUniform("time", (float)m_gameTime);
+            pGUIShader->SetUniform("guiWidth", m_pGUI->GetWidth());
+            pGUIShader->SetUniform("guiHeight", m_pGUI->GetHeight());
+            pGUIShader->SetUniform("timeBoosting", (float)m_pPlayer->GetTimeBoosting());
+            pGUIShader->SetUniform("numberBoosts", (float)m_pPlayer->GetNumBoost());
+            pGUIShader->SetUniform("maxBoost", (float)m_pPlayer->GetMaxBoost()); 
+            m_pGUI->Render();
+        modelViewMatrixStack.Pop();
+
+        pMainProgram->UseProgram();
+        pMainProgram->SetUniform("bUseTexture", true);
+        pMainProgram->SetUniform("sampler0", 0);
+        pMainProgram->SetUniform("CubeMapTex", 1);
+        modelViewMatrixStack.Push();
+            //May be getting clipped due to fNear
+            modelViewMatrixStack.SetIdentity();            modelViewMatrixStack.Translate(glm::vec3(500.0f, 100.0f, 0.0f));            modelViewMatrixStack.Rotate(glm::vec3(1.0f, 0.0f, 0.0f), glm::radians(-90.0f));            modelViewMatrixStack.Rotate(glm::vec3(0.0f, 1.0f, 0.0f), glm::radians(90.0f));            modelViewMatrixStack.Scale(5.0f);
+            pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+            pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+            pMainProgram->SetUniform("matrices.projMatrix", m_pCamera->GetOrthographicProjectionMatrix());
+            m_pPlayer->Render();
+        modelViewMatrixStack.Pop();
+
+        CShaderProgram *fontProgram = (*m_pShaderPrograms)[1];
+        glm::vec4 fontColour = glm::vec4(1.0f, 1.0f, 1.0f, 0.7f);
+        fontProgram->UseProgram();
+        m_pFtFont->LoadFont("resources\\fonts\\LazenbyCompLiquid.ttf",30); //Font downloaded from :https://www.dafont.com/lazenby-computer.font on 04/03/2020 (CC BY-SA 4.0)
+        fontProgram->SetUniform("matrices.modelViewMatrix", glm::mat4(1));
+        fontProgram->SetUniform("matrices.projMatrix", m_pCamera->GetOrthographicProjectionMatrix());
+        fontProgram->SetUniform("vColour", fontColour);
+        m_pFtFont->Print("Time: " + std::to_string((int)(m_gameTime * 0.001f)), 0.0125f*width, height * 0.29f, 20);
+        m_pFtFont->Print("Lap: " + std::to_string(m_pCatmullRom->CurrentLap(m_currentDistance)) +"/" + std::to_string(m_maxLaps), 0.4f*width, height * 0.29f, 20);
+        m_pFtFont->Print("Boost: ", width * 0.045f, height * 0.185f, 30);
+        m_pFtFont->Print("Shields: ", width * 0.045f, height * 0.12f, 30);
+        std::string shields = "";
+        if (m_pPlayer->GetShield()) {
+            fontProgram->SetUniform("vColour", glm::vec4(0.28, 0.73f, 0.26f, 0.7f));
+            shields = "ACTIVE";
+        } else {
+            fontProgram->SetUniform("vColour", glm::vec4(0.84f, 0.02f, 0.0f, 0.7f));
+            shields = "INACTIVE";
+        }
+        m_pFtFont->Print(shields, width * 0.2f, height * 0.12f, 30);
+        fontProgram->SetUniform("vColour", fontColour);
+        m_pFtFont->Print("Speed: " + std::to_string((int)(m_pPlayer->GetSpeed() * 10000)) + "mph", width * 0.045f, height * 0.055f, 30);
+    }
+
 	// Draw the 2D graphics after the 3D graphics
 	DisplayFrameRate();
 
@@ -540,8 +611,7 @@ void Game::Update()
             }
             break;
     }
-    double maxBoost = 3000;
-    m_pPlayer->BoostAcceleration(maxBoost, m_dt);
+    m_pPlayer->BoostAcceleration(m_dt);
 	// Update the camera using the amount of time that has elapsed to avoid framerate dependent motion
     /*
     m_currentDistance += m_dt * 0.01f;
@@ -649,7 +719,6 @@ void Game::DisplayFrameRate()
 		// Reset the frames per second
 		m_frameCount = 0;
     }
-
 	if (m_framesPerSecond > 0) {
 		// Use the font shader program and render the text
 		fontProgram->UseProgram();
@@ -657,14 +726,15 @@ void Game::DisplayFrameRate()
 		fontProgram->SetUniform("matrices.modelViewMatrix", glm::mat4(1));
 		fontProgram->SetUniform("matrices.projMatrix", m_pCamera->GetOrthographicProjectionMatrix());
 		fontProgram->SetUniform("vColour", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-        m_pFtFont->Print("Player: " + glm::to_string(m_pPlayer->GetPosition()), 20, height - 20, 20);
-        m_pFtFont->Print("Asteroid: " + glm::to_string((*m_collidableObjects)[0]->GetPosition()),20, height-50,20);
-        m_pFtFont->Print("Camera: " + glm::to_string(m_pCamera->GetPosition()), 20, height - 80, 20);
-        m_pFtFont->Print("Current Check: " +std::to_string(m_currentCheck), 20, height - 110, 20);
-        m_pFtFont->Print("Number of Boosts: " + std::to_string(m_pPlayer->GetNumBoost()), 20, height - 140, 20);
-        m_pFtFont->Print("Health: " + std::to_string(m_pPlayer->GetHealth()), 20, height - 170, 20);
+        //m_pFtFont->Print("Player: " + glm::to_string(m_pPlayer->GetPosition()), 20, height - 20, 20);
+        //m_pFtFont->Print("Asteroid: " + glm::to_string((*m_collidableObjects)[0]->GetPosition()),20, height-50,20);
+        //m_pFtFont->Print("Camera: " + glm::to_string(m_pCamera->GetPosition()), 20, height - 80, 20);
+        //m_pFtFont->Print("Current Check: " +std::to_string(m_currentCheck), 20, height - 110, 20);
+        //m_pFtFont->Print("Time Boosting: " + std::to_string((float)m_pPlayer->GetTimeBoosting()), 20, height - 140, 20);
+        //m_pFtFont->Print("Health: " + std::to_string(m_pPlayer->GetHealth()), 20, height - 170, 20);
+        //m_pFtFont->Print("Game time: " + std::to_string(m_gameTime), 20, height - 200, 20);
         //m_pFtFont->Print(std::to_string(m_pPlayer->GetSpeed()), 20, height - 20, 20);
-		//m_pFtFont->Render(20, height - 20, 20, "FPS: %d", m_framesPerSecond);
+		m_pFtFont->Render(20, height - 20, 20, "FPS: %d", m_framesPerSecond);
 	}
 }
 
@@ -725,6 +795,7 @@ void Game::Reset() {
     m_currentDistance = 0;
     m_currentCheck = 0;
     m_pPlayer->Reset();
+    m_gameTime = 0;
 }
 
 WPARAM Game::Execute() 
@@ -824,6 +895,11 @@ LRESULT Game::ProcessEvents(HWND window,UINT message, WPARAM w_param, LPARAM l_p
             case 0x52: //R key
                 {
                     Reset();
+                }
+                break;
+                case 0x4D: //M key
+                {
+                    m_displayHUD = m_displayHUD == true ? false : true;
                 }
                 break;
 		}

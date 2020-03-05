@@ -24,6 +24,7 @@ CPlayer::CPlayer() {
     m_timeBoosting = 0;
     m_numBoosts = 0;
     m_health = 0;
+    m_maxBoost = 0;
 }
 
 CPlayer::~CPlayer() {
@@ -54,6 +55,7 @@ void CPlayer::Initialise(glm::vec3 position, glm::vec3 view) {
     m_numBoosts = 0;
     m_boostAcceleration = 0.01f;
     m_health = 1;
+    m_maxBoost = 3000;
 }
 void CPlayer::Accelerate(float acceleration, double &dt) {
     //ternery statement - adds acceleration to speed unless max speed is reached
@@ -107,7 +109,7 @@ void CPlayer::Update(double dt, double max, bool playerUpdate) {
             DecelerateSide(m_acceleration * -1.0f, dt);
         }
     }
-    if (m_boost > 1.0f) {
+    if (m_isBoosting) {
         m_timeBoosting += dt;
     }
     Advance(dt);
@@ -195,8 +197,8 @@ void CPlayer::ActivateBoost() {
         }
     }
 }
-void CPlayer::BoostAcceleration(double &maxBoostTime, double dt) {
-    if (m_timeBoosting > maxBoostTime) {
+void CPlayer::BoostAcceleration(double dt) {
+    if (m_timeBoosting > m_maxBoost) {
         m_isBoosting = false;
         m_timeBoosting = 0.0f;
     }

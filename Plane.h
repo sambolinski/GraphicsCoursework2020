@@ -10,6 +10,9 @@ public:
 	CPlane();
 	~CPlane();
 	void Create(string sDirectory, string sFilename, float fWidth, float fHeight, float fTextureRepeat);
+
+    float &GetWidth() { return m_width; } //added
+    float &GetHeight() { return m_height; } //added
 	void Render();
 	void Release();
 private:

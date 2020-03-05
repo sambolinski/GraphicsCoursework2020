@@ -33,7 +33,7 @@ private:
 	CSkybox *m_pSkybox;
 	CCamera *m_pCamera;
 	vector <CShaderProgram *> *m_pShaderPrograms;
-	CPlane *m_pPlanarTerrain;
+	CPlane *m_pGUI;
 	CFreeTypeFont *m_pFtFont;
 	COpenAssetImportMesh *m_pBarrelMesh;
 	COpenAssetImportMesh *m_pHorseMesh;
@@ -78,5 +78,7 @@ private:
 	double m_elapsedTime;
     double m_gameTime;
     bool m_paused = false;
+    bool m_displayHUD = true;
+    unsigned int m_maxLaps;
 
 };

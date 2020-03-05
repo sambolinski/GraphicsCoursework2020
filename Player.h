@@ -38,11 +38,13 @@ public:
     unsigned int &GetNumBoost() { return m_numBoosts; }
     unsigned int &GetHealth() { return m_health; }
     bool &GetShield() { return m_shield; }
+    double &GetTimeBoosting() { return m_timeBoosting; }
+    float &GetMaxBoost() { return m_maxBoost; }
     void ActivateShield() { m_shield = true; }
     void DeactivateShield() { m_shield = false; }
     void IncrementBoost() { m_numBoosts + 1 < 2?m_numBoosts++:1; };
     void ActivateBoost();
-    void BoostAcceleration(double &maxBoostTime, double dt);
+    void BoostAcceleration(double dt);
     void Reset();
     void TakeDamage();
 
@@ -88,4 +90,5 @@ private:
     glm::mat4 m_playerOrientation;
     float m_scale;
     float m_angle;
+    float m_maxBoost;
 };
