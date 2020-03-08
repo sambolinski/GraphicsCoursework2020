@@ -68,6 +68,7 @@ private:
     int m_currentCheck = 0;
     void CheckCollisions();
 	void DisplayFrameRate();
+    void DisplayMessage(std::string &message, float x, float y, float size);
 	void GameLoop();
     void UpdateCollidables();
     void CheckGameOver();
@@ -77,6 +78,7 @@ private:
 	int m_frameCount;
 	double m_elapsedTime;
     double m_gameTime;
+    int m_gameOver = 0;
     bool m_paused = false;
     bool m_displayHUD = true;
     unsigned int m_maxLaps;

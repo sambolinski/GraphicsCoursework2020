@@ -230,7 +230,7 @@ void Game::Initialise()
     m_pIsocahedron->Create("resources\\textures\\", "ShieldGreen.png");
 
     //Create the GUI background
-    m_pGUI->Create("resources\\textures\\", "pyramid.jpg", width, height*0.55f, 1.0f);
+    m_pGUI->Create("resources\\textures\\", "pyramid.jpg", width* 0.6f, height*0.5f, 1.0f);
 
     //Creating and initialising collidables
     unsigned int numberCollidables = 15;
@@ -314,6 +314,10 @@ void Game::Render()
 	glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
 
+    RECT dimensions = m_gameWindow.GetDimensions();
+    float height = dimensions.bottom - dimensions.top;
+    float width = dimensions.right - dimensions.left;
+
 	// Set up a matrix stack
 	glutil::MatrixStack modelViewMatrixStack;
 	modelViewMatrixStack.SetIdentity();
@@ -395,6 +399,7 @@ void Game::Render()
                 pMainProgram->SetUniform("bUseTexture", true);
                 modelViewMatrixStack.Translate((*m_collidableObjects)[i]->GetPosition());
                 modelViewMatrixStack *= (*m_collidableObjects)[i]->GetPlayerOrientation();
+                //constantly rotates
                 glm::vec3 rotationalVector = glm::vec3(0, 0, 0);
                 if ((*m_collidableObjects)[i]->GetType() == "ASTEROID") {
                     rotationalVector = (*m_collidableObjects)[i]->GetTNBFrame().T;
@@ -422,7 +427,7 @@ void Game::Render()
         m_pPlayer->Render();
     modelViewMatrixStack.Pop();
 
-    //Enabling Texture Blending
+    //Enabling transparent texture
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
@@ -463,15 +468,14 @@ void Game::Render()
     pGUIShader->UseProgram();
 
 
-    RECT dimensions = m_gameWindow.GetDimensions();
-    float height = dimensions.bottom - dimensions.top;
-    float width = dimensions.right - dimensions.left;
+    //Render GUI background
     if (m_displayHUD) {
-        //Render GUI background
-
+        //Displays backgroundplane that will act as hud for player 
+        //uses orthogrhics projection
         glDisable(GL_DEPTH_TEST);
         modelViewMatrixStack.Push();
-            modelViewMatrixStack.SetIdentity();            modelViewMatrixStack.Translate(glm::vec3(1.0f, 50.0f, 0.0f));
+            modelViewMatrixStack.SetIdentity();
+            modelViewMatrixStack.Translate(glm::vec3(1.0f, 50.0f, 0.0f));
             modelViewMatrixStack.Rotate(glm::vec3(1.0f, 0.0f, 0.0f), glm::radians(90.0f));
             pGUIShader->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
             pGUIShader->SetUniform("matrices.projMatrix", m_pCamera->GetOrthographicProjectionMatrix());
@@ -483,20 +487,7 @@ void Game::Render()
             pGUIShader->SetUniform("maxBoost", (float)m_pPlayer->GetMaxBoost()); 
             m_pGUI->Render();
         modelViewMatrixStack.Pop();
-
-        pMainProgram->UseProgram();
-        pMainProgram->SetUniform("bUseTexture", true);
-        pMainProgram->SetUniform("sampler0", 0);
-        pMainProgram->SetUniform("CubeMapTex", 1);
-        modelViewMatrixStack.Push();
-            //May be getting clipped due to fNear
-            modelViewMatrixStack.SetIdentity();            modelViewMatrixStack.Translate(glm::vec3(500.0f, 100.0f, 0.0f));            modelViewMatrixStack.Rotate(glm::vec3(1.0f, 0.0f, 0.0f), glm::radians(-90.0f));            modelViewMatrixStack.Rotate(glm::vec3(0.0f, 1.0f, 0.0f), glm::radians(90.0f));            modelViewMatrixStack.Scale(5.0f);
-            pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-            pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-            pMainProgram->SetUniform("matrices.projMatrix", m_pCamera->GetOrthographicProjectionMatrix());
-            m_pPlayer->Render();
-        modelViewMatrixStack.Pop();
-
+        //displays text on hud showing speed, boost status, shields, current lap, current time.
         CShaderProgram *fontProgram = (*m_pShaderPrograms)[1];
         glm::vec4 fontColour = glm::vec4(1.0f, 1.0f, 1.0f, 0.7f);
         fontProgram->UseProgram();
@@ -504,8 +495,8 @@ void Game::Render()
         fontProgram->SetUniform("matrices.modelViewMatrix", glm::mat4(1));
         fontProgram->SetUniform("matrices.projMatrix", m_pCamera->GetOrthographicProjectionMatrix());
         fontProgram->SetUniform("vColour", fontColour);
-        m_pFtFont->Print("Time: " + std::to_string((int)(m_gameTime * 0.001f)), 0.0125f*width, height * 0.29f, 20);
-        m_pFtFont->Print("Lap: " + std::to_string(m_pCatmullRom->CurrentLap(m_currentDistance)) +"/" + std::to_string(m_maxLaps), 0.4f*width, height * 0.29f, 20);
+        m_pFtFont->Print("Time: " + std::to_string((int)(m_gameTime * 0.001f)), 0.0125f*width, height * 0.26f, 20);
+        m_pFtFont->Print("Lap: " + std::to_string(m_pCatmullRom->CurrentLap(m_currentDistance)) +"/" + std::to_string(m_maxLaps), 0.235f*width, height * 0.26f, 20);
         m_pFtFont->Print("Boost: ", width * 0.045f, height * 0.185f, 30);
         m_pFtFont->Print("Shields: ", width * 0.045f, height * 0.12f, 30);
         std::string shields = "";
@@ -518,7 +509,26 @@ void Game::Render()
         }
         m_pFtFont->Print(shields, width * 0.2f, height * 0.12f, 30);
         fontProgram->SetUniform("vColour", fontColour);
-        m_pFtFont->Print("Speed: " + std::to_string((int)(m_pPlayer->GetSpeed() * 10000)) + "mph", width * 0.045f, height * 0.055f, 30);
+        m_pFtFont->Print("Speed: ", width * 0.045f, height * 0.055f, 30);
+        m_pFtFont->Print(std::to_string((int)(m_pPlayer->GetSpeed() * 100)*100) + "mph", width * 0.195f, height * 0.055f, 30);
+    }
+
+    CShaderProgram *fontProgram = (*m_pShaderPrograms)[1];
+    fontProgram->UseProgram();
+    fontProgram->SetUniform("matrices.modelViewMatrix", glm::mat4(1));
+    fontProgram->SetUniform("matrices.projMatrix", m_pCamera->GetOrthographicProjectionMatrix());
+    //Game over textt, 1 == game over from failure, 2 = game over from success
+    if (m_gameOver == 1 || m_gameOver == 2) {
+        if (m_gameOver == 1) {
+            glm::vec4 fontColour = glm::vec4(0.72f, 0.07f, 0.07f, 1.0f); //red
+            fontProgram->SetUniform("vColour", fontColour);
+            m_pFtFont->Print("GAME OVER", width * 0.36, height * 0.445, 100);
+        } else if (m_gameOver == 2) {
+            glm::vec4 fontColour = glm::vec4(0.08f, 0.73f, 0.18f, 1.0f); //green
+            fontProgram->SetUniform("vColour", fontColour);
+            m_pFtFont->Print("COMPLETE", width * 0.37, height * 0.445, 100);
+            m_pFtFont->Print("TIME: " + std::to_string((int)(m_gameTime * 0.001f)), width * 0.37, height * 0.3, 80);
+        }
     }
 
 	// Draw the 2D graphics after the 3D graphics
@@ -528,7 +538,6 @@ void Game::Render()
 	SwapBuffers(m_gameWindow.Hdc());		
 
 }
-
 
 // Update method runs repeatedly with the Render method
 void Game::Update()
@@ -594,7 +603,6 @@ void Game::Update()
             break;
         case 1: //Top down View
             {
-
                 glm::vec3 cameraPosition;
                 glm::vec3 cameraLook = playerPosition;
                 glm::vec3 cameraUp = T;
@@ -693,6 +701,11 @@ void Game::CheckCollisions() {
 void Game::CheckGameOver() {
     if (m_pPlayer->GetHealth() == 0) {
         m_paused = true;
+        m_gameOver = 1;
+    }
+    if (m_pCatmullRom->CurrentLap(m_currentDistance) == m_maxLaps) {
+        m_paused = true;
+        m_gameOver = 2;
     }
 }
 
@@ -796,6 +809,7 @@ void Game::Reset() {
     m_currentCheck = 0;
     m_pPlayer->Reset();
     m_gameTime = 0;
+    m_gameOver = false;
 }
 
 WPARAM Game::Execute() 

@@ -88,7 +88,6 @@ void CIsocahedron::Create(string directory, string filename) {
         isocahedronVertices[6],
         isocahedronVertices[4],
 
-        //mark
         isocahedronVertices[8],
         isocahedronVertices[1],
         isocahedronVertices[6],
@@ -113,7 +112,6 @@ void CIsocahedron::Create(string directory, string filename) {
         isocahedronVertices[5],
         isocahedronVertices[2],
 
-        //mark2
         isocahedronVertices[11],
         isocahedronVertices[2],
         isocahedronVertices[9],
@@ -147,14 +145,44 @@ void CIsocahedron::Create(string directory, string filename) {
     glm::vec3 isocahedronNormals[60];
     for (unsigned int i = 0; i < 20; i++) {
         glm::vec3 A = isocahedronTriangles[(i * 3)];
+        glm::vec3 B = isocahedronTriangles[(i * 3) + 1];
+        glm::vec3 C = isocahedronTriangles[(i * 3) + 2];
+        glm::vec3 normal = glm::normalize(glm::cross(B - A, C - A));
+        isocahedronNormals[(i * 3)] = normal;
+        isocahedronNormals[(i * 3) + 1] = normal;
+        isocahedronNormals[(i * 3) + 2] = normal;
+    }
+    //Algorithm if face winding is inconsistent
+    /*
+    for (unsigned int i = 0; i < 20; i++) {
+        glm::vec3 A = isocahedronTriangles[(i * 3)];
         glm::vec3 B = isocahedronTriangles[(i * 3)+1];
         glm::vec3 C = isocahedronTriangles[(i * 3)+2];
-        glm::vec3 normal = glm::normalize(glm::cross(B - A, C - A));
-        isocahedronNormals[i] = normal;
-        isocahedronNormals[i+1] = normal;
-        isocahedronNormals[i+2] = normal;
-    }
+        glm::vec3 triangleCentre = (A + B + C) / 3.0f;
+        std::vector<glm::vec3> possibleNormals = {
+            glm::normalize(glm::cross(B - A, C - A)),
+            glm::normalize(glm::cross(C - A, B - A)),
 
+            glm::normalize(glm::cross(A - B, C - B)),
+            glm::normalize(glm::cross(C - B, A - B)),
+
+            glm::normalize(glm::cross(A - C, B - C)),
+            glm::normalize(glm::cross(B - C, A - C)),
+        };
+        glm::vec3 furthestNormal = glm::vec3(0,0,0);
+        float furthestNormalLength = 0;
+        for (unsigned int i = 0; i < possibleNormals.size(); i++) {
+            float length = glm::length(((possibleNormals[i] * 0.1f) + triangleCentre)-glm::vec3(0,0,0));
+            if (length >= furthestNormalLength) {
+                furthestNormal = possibleNormals[i];
+                furthestNormalLength = length;
+            }
+        }
+        isocahedronNormals[(i * 3)] = furthestNormal;
+        isocahedronNormals[(i * 3) + 1] = furthestNormal;
+        isocahedronNormals[(i * 3) + 2] = furthestNormal;
+    }
+    */
     // Put the vertex attributes in the VBO
     for (unsigned int i = 0; i < 60; i++) {
         m_vbo.AddData(&isocahedronTriangles[i], sizeof(glm::vec3));

@@ -10,7 +10,7 @@ uniform float guiHeight;
 uniform float timeBoosting;
 uniform float maxBoost;
 uniform float numberBoosts;
-
+//checks if a pixel is in the specified box
 bool isInBoostBox(float x, float y, float width, float height){
 	if(gl_FragCoord.x > x && gl_FragCoord.x < x + width && gl_FragCoord.y > y && gl_FragCoord.y < y + height){
 		return true;
@@ -29,18 +29,20 @@ void main(){
 		colour = (baseColour * 0.8) + fluctuation;
     }
 	//Boosting Box
-	if(isInBoostBox(guiWidth * 0.125f, guiHeight * 0.31, guiWidth * 0.25, guiHeight * 0.08)){
+	if(isInBoostBox(guiWidth * 0.2f, guiHeight * 0.35, guiWidth * 0.28, guiHeight * 0.08)){
 		colour = vec3(0.25f, 0.25f, 0.25f) + fluctuation;
 	}
 
 	//Boosting Bar
 	float barWidth = 0;
 	if(numberBoosts > 0 || timeBoosting > 0.0f){
-		barWidth = (guiWidth * 0.23f) * (maxBoost - timeBoosting)/maxBoost;
+		barWidth = (guiWidth * 0.26f) * (maxBoost - timeBoosting)/maxBoost;
 	}
-		barWidth = (guiWidth * 0.23f) * (maxBoost - timeBoosting)/maxBoost;
-	
-	if(isInBoostBox(guiWidth * 0.134f, guiHeight * 0.32f, barWidth, guiHeight * 0.06f)){
+
+	if(isInBoostBox((guiWidth * 0.21f), guiHeight * 0.36f, (guiWidth * 0.26f), guiHeight * 0.06f)){
+		colour = vec3(0.35f, 0.35f, 0.35f) + fluctuation;
+	}
+	if(isInBoostBox(guiWidth * 0.21f, guiHeight * 0.36f, barWidth, guiHeight * 0.06f)){
 		colour = vec3(0.28, 0.73f, 0.26f) + fluctuation;
 	}
 	

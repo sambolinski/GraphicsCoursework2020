@@ -301,7 +301,10 @@ void CCatmullRom::CreateTrack(std::string directory, std::string filename) {
     m_texture.SetSamplerObjectParameter(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     m_texture.SetSamplerObjectParameter(GL_TEXTURE_WRAP_S, GL_REPEAT);
     m_texture.SetSamplerObjectParameter(GL_TEXTURE_WRAP_T, GL_REPEAT);
-
+    //aniostropy form lecture slides
+    GLfloat aniso;
+    glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &aniso);
+    m_texture.SetSamplerObjectParameterf(GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso);
     // Generate a VAO called m_vaoTrack and a VBO to get the offset curve points and indices on the graphics card
     glGenVertexArrays(1, &m_vaoTrack);
     glBindVertexArray(m_vaoTrack);

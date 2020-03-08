@@ -44,12 +44,16 @@ void CSquarePyramid::Create(string directory, string filename, float width, floa
     float halfDepth = m_depth / 2.0f;
 
     // Vertex positions
-    glm::vec3 squarePyramidVertices[16] = {
+    glm::vec3 squarePyramidVertices[18] = {
         //Face Bottom Done
         glm::vec3(halfWidth, -halfDepth, -halfHeight),
         glm::vec3(halfWidth, -halfDepth,  halfHeight),
         glm::vec3(-halfWidth, -halfDepth,  halfHeight),
+
+        glm::vec3(-halfWidth, -halfDepth,  halfHeight),
         glm::vec3(-halfWidth, -halfDepth, -halfHeight),
+        glm::vec3(halfWidth, -halfDepth, -halfHeight),
+
         //Face Left Done
         glm::vec3(-halfWidth, -halfDepth,  halfHeight),
         glm::vec3(0,  halfDepth,  0),
@@ -67,88 +71,64 @@ void CSquarePyramid::Create(string directory, string filename, float width, floa
         glm::vec3(0,  halfDepth,  0),
         glm::vec3(halfWidth, -halfDepth,  -halfHeight)
     };
-    unsigned int squarePyramidIndices[18] = {
-        //Face Bottom
-        0, 1, 2,
-        0, 2, 3,
-
-        //Face Left
-        4, 5, 6,
-
-        //Face Front
-        7,  8, 9,
-
-        //Face Right
-        10, 11, 12,
-
-        //Face Behind
-        13, 14, 15
-    };
     // Texture coordinates
-    glm::vec2 squarePyramidFloorTexCoords[4] =
-    {
-        /*
-        glm::vec2(textureRepeat * 0.5f, 0.0f),
-        glm::vec2(textureRepeat, textureRepeat),
-        glm::vec2(textureRepeat, 0.0f),
-        glm::vec2(textureRepeat * 0.5f, textureRepeat),
-        */
+    glm::vec2 squarePyramidFloorTexCoords[6] = {
         glm::vec2(textureRepeat * 0.5f, 0.0f),
         glm::vec2(textureRepeat * 0.5f, textureRepeat),
         glm::vec2(textureRepeat, textureRepeat),
+        glm::vec2(textureRepeat, textureRepeat),
         glm::vec2(textureRepeat, 0.0f),
+        glm::vec2(textureRepeat * 0.5f, 0.0f),
 
     };
-    glm::vec2 squarePyramidSideTexCoords[3] =
-    {
+    glm::vec2 squarePyramidSideTexCoords[3] = {
         glm::vec2(textureRepeat * 0.5f, 0.0f),
+        glm::vec2(textureRepeat * 0.25f, textureRepeat),
         glm::vec2(0.0f, 0.0f),
-        glm::vec2(textureRepeat * 0.25f, textureRepeat)
     };
 
     // Cube normal
-    glm::vec3 squarePyramidNormals[16] = {
+
+    glm::vec3 squarePyramidNormals[18] = {
         //Bottom Face
+        glm::vec3(0.0f, -1.0f, 0.0f),
+        glm::vec3(0.0f, -1.0f, 0.0f),
         glm::vec3(0.0f, -1.0f, 0.0f),
         glm::vec3(0.0f, -1.0f, 0.0f),
         glm::vec3(0.0f, -1.0f, 0.0f),
         glm::vec3(0.0f, -1.0f, 0.0f),
 
         //Left Face
-        glm::vec3(0.8944f, -0.4472f, 0.0f),
-        glm::vec3(0.8944f, -0.4472f, 0.0f),
-        glm::vec3(0.8944f, -0.4472f, 0.0f),
+        glm::vec3(-0.8944f, 0.4472f, 0.0f),
+        glm::vec3(-0.8944f, 0.4472f, 0.0f),
+        glm::vec3(-0.8944f, 0.4472f, 0.0f),
 
         //Front Face
-        glm::vec3(0.0f, -0.4472f, -0.8944f),
-        glm::vec3(0.0f, -0.4472f, -0.8944f),
-        glm::vec3(0.0f, -0.4472f, -0.8944f),
+        glm::vec3(0.0f, 0.4472f, 0.8944f),
+        glm::vec3(0.0f, 0.4472f, 0.8944f),
+        glm::vec3(0.0f, 0.4472f, 0.8944f),
 
         //Right face
-        glm::vec3(-0.8944f, -0.4472f, 0.0f),
-        glm::vec3(-0.8944f, -0.4472f, 0.0f),
-        glm::vec3(-0.8944f, -0.4472f, 0.0f),
+        glm::vec3(0.8944f, 0.4472f, 0.0f),
+        glm::vec3(0.8944f, 0.4472f, 0.0f),
+        glm::vec3(0.8944f, 0.4472f, 0.0f),
 
         //Behind Face
-        glm::vec3(0.0f, -0.4472f, 0.8944f),
-        glm::vec3(0.0f, -0.4472f, 0.8944f),
-        glm::vec3(0.0f, -0.4472f, 0.8944f)
+        glm::vec3(0.0f, 0.4472f, -0.8944f),
+        glm::vec3(0.0f, 0.4472f, -0.8944f),
+        glm::vec3(0.0f, 0.4472f, -0.8944f)
     };
-
     // Put the vertex attributes in the VBO
     unsigned int normalCounter = 0;
     unsigned int faceVertex = 4;
-    for (unsigned int i = 0; i < 16; i++) {
-        m_vbo.AddVertexData(&squarePyramidVertices[i], sizeof(glm::vec3));
-        if (i < 4) {
-            m_vbo.AddVertexData(&squarePyramidFloorTexCoords[i], sizeof(glm::vec2));
+    for (unsigned int i = 0; i < 18; i++) {
+        m_vbo.AddData(&squarePyramidVertices[i], sizeof(glm::vec3));
+        if (i < 6) {
+            m_vbo.AddData(&squarePyramidFloorTexCoords[i], sizeof(glm::vec2));
         } else {
-            m_vbo.AddVertexData(&squarePyramidSideTexCoords[i % 3], sizeof(glm::vec2));
+            m_vbo.AddData(&squarePyramidSideTexCoords[i % 3], sizeof(glm::vec2));
         }
-        m_vbo.AddVertexData(&squarePyramidNormals[i], sizeof(glm::vec3));
-    }
-    for (int i = 0; i < 18; i++) {
-        m_vbo.AddIndexData(&squarePyramidIndices[i], sizeof(unsigned int));
+        m_vbo.AddData(&squarePyramidNormals[i], sizeof(glm::vec3));
     }
 
 
@@ -174,7 +154,7 @@ void CSquarePyramid::Create(string directory, string filename, float width, floa
 void CSquarePyramid::Render() {
     glBindVertexArray(m_vao);
     m_texture.Bind();
-    glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_INT, 0);
+    glDrawArrays(GL_TRIANGLES, 0, 18);
 }
 
 // Release resources
