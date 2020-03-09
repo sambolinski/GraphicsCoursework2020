@@ -222,7 +222,7 @@ void Game::Initialise()
     m_pCatmullRom->Sample(0.5f, playerPosition);
     m_pCatmullRom->Sample(1.0f, playerView);
     m_pPlayer->Initialise(playerPosition, playerView); //made using Blender
-
+    m_pPlayer->SetAudio(m_pAudio);
     //Create the squarePyramid
     m_pSquarePyramid->Create("resources\\textures\\", "pyramid.jpg", 11.0f, 11.0f, 10.0f, 1.0f); //Texture by me
 
@@ -341,9 +341,8 @@ void Game::Render()
 	
 	// Set light and materials in main shader program
     pMainProgram->SetUniform("numberOfPowerups", 2);
-	glm::vec4 lightPosition1 = glm::vec4(600, 250, -2300, 1); // Position of light source *in world coordinates*
+	glm::vec4 lightPosition1 = glm::vec4(950, -45, -1600, 1); // Position of light source *in world coordinates*
 	pMainProgram->SetUniform("lights[0].position", viewMatrix*lightPosition1); // Position of light source *in eye coordinates*
-	pMainProgram->SetUniform("lights[0].La", glm::vec3(0.3f));		// Ambient colour of light
 	pMainProgram->SetUniform("lights[0].Ld", glm::vec3(1.5f));		// Diffuse colour of light
 	pMainProgram->SetUniform("lights[0].Ls", glm::vec3(1.0f));		// Specular colour of light
 	pMainProgram->SetUniform("material1.Ma", glm::vec3(1.0f));	// Ambient material reflectance
@@ -354,6 +353,13 @@ void Game::Render()
     pMainProgram->SetUniform("time", (float)m_gameTime);		// Game time in milliseconds
     pMainProgram->SetUniform("lights[1].position", viewMatrix*glm::vec4(m_pPlayer->GetPosition(), 1));// Position of light at playerPosition
     pMainProgram->SetUniform("lights[1].La", glm::vec3(0.3f));		// Ambient colour of light
+
+    //if boosting alter the ambient colour to be more blue
+    if (m_pPlayer->GetBoost() > 1.0f) {
+        pMainProgram->SetUniform("lights[1].La", glm::vec3(0.24f, 0.89f, 0.75f) * m_pPlayer->GetBoost());		
+    } else {
+        pMainProgram->SetUniform("lights[1].La", glm::vec3(0.3f));		
+    }
 
     if ((int)(m_gameTime/1000) % 3 == 0) {
         pMainProgram->SetUniform("lights[1].Ld", glm::vec3(3.0f, 0.0f, 0.0f));
@@ -685,15 +691,23 @@ void Game::CheckCollisions() {
         if ((*m_collidableObjects)[m_currentCheck % m_collidableObjects->size()]->GetType() == "ASTEROID") {
             if (m_pPlayer->GetShield()) {
                 m_pPlayer->DeactivateShield();
+                m_pAudio->LoadEventSound("Resources\\Audio\\shieldBreak.wav"); //https://freesound.org/people/aust_paul/sounds/30937/ by “aust_paul” on 09/03/2020 (CC0 1.0 Universal (CC0 1.0) Public Domain Dedication)
+                m_pAudio->PlayEventSound();
             } else {
                 m_pPlayer->TakeDamage();
+                m_pAudio->LoadEventSound("Resources\\Audio\\shipDestruction.mp3"); //https://freesound.org/people/deleted_user_1941307/sounds/155790/ by “deleted_user_1941307” on 09/03/2020 (CC0 1.0 Universal (CC0 1.0) Public Domain Dedication)
+                m_pAudio->PlayEventSound();
             }
         } else if ((*m_collidableObjects)[m_currentCheck % m_collidableObjects->size()]->GetType() == "POWERUP") {
             CPowerup* currentPowerup = dynamic_cast<CPowerup*>((*m_collidableObjects)[m_currentCheck % m_collidableObjects->size()]);
             if (currentPowerup->GetPowerupType() == "BOOST") {
                 m_pPlayer->IncrementBoost();
+                m_pAudio->LoadEventSound("Resources\\Audio\\boostPowerup.wav"); //https://freesound.org/people/Bird_man/sounds/316743/ by “Bird_man” on 09/03/2020 (CC0 1.0 Universal (CC0 1.0) Public Domain Dedication)
+                m_pAudio->PlayEventSound();
             } else if ((currentPowerup->GetPowerupType() == "SHIELD")) {
                 m_pPlayer->ActivateShield();
+                m_pAudio->LoadEventSound("Resources\\Audio\\shieldPowerup.wav"); //https://freesound.org/people/Eschwabe3/sounds/460133/ by “Eschwabe3” on 09/03/2020 (Attribution 3.0 Unported (CC BY 3.0))
+                m_pAudio->PlayEventSound();
             }
         }
         m_currentCheck++;
@@ -756,7 +770,7 @@ void Game::DisplayFrameRate()
 		fontProgram->SetUniform("vColour", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
         //m_pFtFont->Print("Player: " + glm::to_string(m_pPlayer->GetPosition()), 20, height - 20, 20);
         //m_pFtFont->Print("Asteroid: " + glm::to_string((*m_collidableObjects)[0]->GetPosition()),20, height-50,20);
-        //m_pFtFont->Print("Camera: " + glm::to_string(m_pCamera->GetPosition()), 20, height - 80, 20);
+        m_pFtFont->Print("Camera: " + glm::to_string(m_pCamera->GetPosition()), 20, height - 80, 20);
         //m_pFtFont->Print("Current Check: " +std::to_string(m_currentCheck), 20, height - 110, 20);
         //m_pFtFont->Print("Time Boosting: " + std::to_string((float)m_pPlayer->GetTimeBoosting()), 20, height - 140, 20);
         //m_pFtFont->Print("Health: " + std::to_string(m_pPlayer->GetHealth()), 20, height - 170, 20);
@@ -905,7 +919,6 @@ LRESULT Game::ProcessEvents(HWND window,UINT message, WPARAM w_param, LPARAM l_p
 			    PostQuitMessage(0);
 			    break;
 		    case '1':
-			    m_pAudio->PlayEventSound();
 			    break;
             //added case to cycle camera view type
             case 0x50: //P key

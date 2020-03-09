@@ -3,6 +3,7 @@
 CPlayer::CPlayer() {
     m_playerModel = NULL;
     m_shieldModel = NULL;
+    m_audio = NULL;
     m_maxSpeed = 0.0f;
     m_minSpeed = 0.0f;
     m_speed = 0.0f;
@@ -194,6 +195,8 @@ void CPlayer::ActivateBoost() {
             m_isBoosting = true;
             m_timeBoosting = 0;
             m_numBoosts--;
+            m_audio->LoadEventSound("Resources\\Audio\\boost.wav"); //https://freesound.org/people/Hilfsabeitah/sounds/478592/ by “Hilfsabeitah” on 09/03/2020 (CC0 1.0 Universal (CC0 1.0) Public Domain Dedication)
+            m_audio->PlayEventSound();
         }
     }
 }

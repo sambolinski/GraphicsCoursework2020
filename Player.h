@@ -3,9 +3,10 @@
 #include "./include/glm/gtc/matrix_transform.hpp"
 #include "OpenAssetImportMesh.h"
 #include "Isocahedron.h"
-
+#include "Audio.h"
 class COpenAssetImportMesh;
 class CIsocahedron;
+class CAudio;
 class CPlayer {
 public:
     CPlayer();
@@ -48,7 +49,7 @@ public:
     void BoostAcceleration(double dt);
     void Reset();
     void TakeDamage();
-
+    void SetAudio(CAudio *audio) { m_audio = audio; }
     //used from Camera.h but updated for player
     void TranslateByKeyboard(double dt);
     void Advance(double dt);
@@ -89,6 +90,7 @@ private:
     glm::vec3 m_upVector;
     glm::vec3 m_strafeVector;
     glm::mat4 m_playerOrientation;
+    CAudio *m_audio;
     float m_scale;
     float m_angle;
     float m_maxBoost;
