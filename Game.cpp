@@ -340,16 +340,35 @@ void Game::Render()
 
 	
 	// Set light and materials in main shader program
+    pMainProgram->SetUniform("numberOfPowerups", 2);
 	glm::vec4 lightPosition1 = glm::vec4(600, 250, -2300, 1); // Position of light source *in world coordinates*
-	pMainProgram->SetUniform("light1.position", viewMatrix*lightPosition1); // Position of light source *in eye coordinates*
-	pMainProgram->SetUniform("light1.La", glm::vec3(0.3f));		// Ambient colour of light
-	pMainProgram->SetUniform("light1.Ld", glm::vec3(1.5f));		// Diffuse colour of light
-	pMainProgram->SetUniform("light1.Ls", glm::vec3(1.0f));		// Specular colour of light
+	pMainProgram->SetUniform("lights[0].position", viewMatrix*lightPosition1); // Position of light source *in eye coordinates*
+	pMainProgram->SetUniform("lights[0].La", glm::vec3(0.3f));		// Ambient colour of light
+	pMainProgram->SetUniform("lights[0].Ld", glm::vec3(1.5f));		// Diffuse colour of light
+	pMainProgram->SetUniform("lights[0].Ls", glm::vec3(1.0f));		// Specular colour of light
 	pMainProgram->SetUniform("material1.Ma", glm::vec3(1.0f));	// Ambient material reflectance
 	pMainProgram->SetUniform("material1.Md", glm::vec3(0.0f));	// Diffuse material reflectance
 	pMainProgram->SetUniform("material1.Ms", glm::vec3(0.0f));	// Specular material reflectance
 	pMainProgram->SetUniform("material1.shininess", 15.0f);		// Shininess material property
-		
+
+    pMainProgram->SetUniform("time", (float)m_gameTime);		// Game time in milliseconds
+    pMainProgram->SetUniform("lights[1].position", viewMatrix*glm::vec4(m_pPlayer->GetPosition(), 1));// Position of light at playerPosition
+    pMainProgram->SetUniform("lights[1].La", glm::vec3(0.3f));		// Ambient colour of light
+
+    if ((int)(m_gameTime/1000) % 3 == 0) {
+        pMainProgram->SetUniform("lights[1].Ld", glm::vec3(3.0f, 0.0f, 0.0f));
+        pMainProgram->SetUniform("lights[1].Ls", glm::vec3(3.0f, 0.0f, 0.0f));
+    } else if ((int)(m_gameTime/1000) % 2 == 0) {
+        pMainProgram->SetUniform("lights[1].Ld", glm::vec3(0.0f, 3.0f, 0.0f));
+        pMainProgram->SetUniform("lights[1].Ls", glm::vec3(0.0f, 3.0f, 0.0f));
+    } else if ((int)(m_gameTime/1000) % 1 == 0) {
+        pMainProgram->SetUniform("lights[1].Ld", glm::vec3(0.0f, 0.0f, 3.0f));
+        pMainProgram->SetUniform("lights[1].Ls", glm::vec3(0.0f, 0.0f, 3.0f));
+    }
+    pMainProgram->SetUniform("lights[1].direction", glm::normalize(viewNormalMatrix*glm::vec3(m_pPlayer->GetUpVector() * -1.0f * 5.0f)));// Direction of light
+    pMainProgram->SetUniform("lights[1].exponent", 10.0f);
+    pMainProgram->SetUniform("lights[1].cutoff", 55.0f);
+    		
 
 	// Render the skybox and terrain with full ambient reflectance 
 	modelViewMatrixStack.Push();
@@ -362,15 +381,12 @@ void Game::Render()
 		m_pSkybox->Render();
 		pMainProgram->SetUniform("renderSkybox", false);
 	modelViewMatrixStack.Pop();
-
-
+    
 	// Turn on diffuse + specular materials
 	pMainProgram->SetUniform("material1.Ma", glm::vec3(0.5f));	// Ambient material reflectance
 	pMainProgram->SetUniform("material1.Md", glm::vec3(0.5f));	// Diffuse material reflectance
 	pMainProgram->SetUniform("material1.Ms", glm::vec3(1.0f));	// Specular material reflectance	
-
-
-
+       
     // Render the square pyramid
     modelViewMatrixStack.Push();
         modelViewMatrixStack.Translate(glm::vec3(600.0f, -360.0f + sin(m_gameTime/1000)*30.0f, -1780.0f));
@@ -431,7 +447,6 @@ void Game::Render()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
-
     //render track
     modelViewMatrixStack.Push();
         pMainProgram->SetUniform("bUseTexture", true);

@@ -32,6 +32,7 @@ public:
     float &GetSideAmount() { return m_sideAmount; }
     float &GetSideSpeed() { return m_sideSpeed; }
     void SetView(glm::vec3 view) { m_view = view; }
+    glm::vec3 &GetUpVector() { return m_upVector; }
     glm::mat4 &GetPlayerOrientation() { return m_playerOrientation; }
     void SetPlayerOrientation(glm::mat4 playerOrientation) { m_playerOrientation = playerOrientation; }
     float &GetBoost() { return m_boost; }
