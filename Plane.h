@@ -13,7 +13,7 @@ public:
 
     float &GetWidth() { return m_width; } //added
     float &GetHeight() { return m_height; } //added
-	void Render();
+	void Render(bool bindTexture);
 	void Release();
 private:
 	UINT m_vao;

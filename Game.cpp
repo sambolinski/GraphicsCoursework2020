@@ -43,6 +43,7 @@ Source code drawn from a number of sources and examples, including contributions
 #include "Asteroid.h"
 #include "Powerup.h"
 #include "Isocahedron.h"
+#include "FrameBufferObject.h"
 
 // Constructor
 Game::Game()
@@ -64,6 +65,8 @@ Game::Game()
     m_pPlanet = NULL;
     m_collidableObjects = NULL;
     m_pIsocahedron = NULL;
+    m_pFBO = NULL;
+    m_pFrameBufferWindow = NULL;
 
 	m_dt = 0.0;
 	m_framesPerSecond = 0;
@@ -91,6 +94,8 @@ Game::~Game()
     delete m_pSquarePyramid;
     delete m_pPlanet;
     delete m_pIsocahedron;
+    delete m_pFBO;
+    delete m_pFrameBufferWindow;
 
     if (m_collidableObjects != NULL) {
         for (unsigned int i = 0; i < m_collidableObjects->size(); i++)
@@ -132,6 +137,8 @@ void Game::Initialise()
     m_pPlanet = new COpenAssetImportMesh;
     m_pIsocahedron = new CIsocahedron;
     m_collidableObjects = new vector <CCollidable *>;
+    m_pFBO = new CFrameBufferObject;
+    m_pFrameBufferWindow = new CPlane;
 
 	RECT dimensions = m_gameWindow.GetDimensions();
 
@@ -303,17 +310,15 @@ void Game::Initialise()
             break;
         }
     }
+
+    //create FBO
+    m_pFrameBufferWindow->Create("resources\\textures\\", "pyramid.jpg", width, height, 1.0f); //uses random texture, won't be shown
+    //m_pFBO->Create(width, height);
 }
 
 // Render method runs repeatedly in a loop
 void Game::Render() 
 {
-
-	// Clear the buffers and enable depth testing (z-buffering)
-	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
-
     RECT dimensions = m_gameWindow.GetDimensions();
     float height = dimensions.bottom - dimensions.top;
     float width = dimensions.right - dimensions.left;
@@ -321,174 +326,17 @@ void Game::Render()
 	// Set up a matrix stack
 	glutil::MatrixStack modelViewMatrixStack;
 	modelViewMatrixStack.SetIdentity();
-	// Use the main shader program 
-	CShaderProgram *pMainProgram = (*m_pShaderPrograms)[0];
-	pMainProgram->UseProgram();
-	pMainProgram->SetUniform("bUseTexture", true);
-	pMainProgram->SetUniform("sampler0", 0);
-	pMainProgram->SetUniform("CubeMapTex", 1);
-	
 
-	// Set the projection matrix
-	pMainProgram->SetUniform("matrices.projMatrix", m_pCamera->GetPerspectiveProjectionMatrix());
-
-	// Call LookAt to create the view matrix and put this on the modelViewMatrix stack. 
-	// Store the view matrix and the normal matrix associated with the view matrix for later (they're useful for lighting -- since lighting is done in eye coordinates)
-	modelViewMatrixStack.LookAt(m_pCamera->GetPosition(), m_pCamera->GetView(), m_pCamera->GetUpVector());
-	glm::mat4 viewMatrix = modelViewMatrixStack.Top();
-	glm::mat3 viewNormalMatrix = m_pCamera->ComputeNormalMatrix(viewMatrix);
-
-	
-	// Set light and materials in main shader program
-    pMainProgram->SetUniform("numberOfPowerups", 2);
-	glm::vec4 lightPosition1 = glm::vec4(950, -45, -1600, 1); // Position of light source *in world coordinates*
-	pMainProgram->SetUniform("lights[0].position", viewMatrix*lightPosition1); // Position of light source *in eye coordinates*
-	pMainProgram->SetUniform("lights[0].Ld", glm::vec3(1.5f));		// Diffuse colour of light
-	pMainProgram->SetUniform("lights[0].Ls", glm::vec3(1.0f));		// Specular colour of light
-	pMainProgram->SetUniform("material1.Ma", glm::vec3(1.0f));	// Ambient material reflectance
-	pMainProgram->SetUniform("material1.Md", glm::vec3(0.0f));	// Diffuse material reflectance
-	pMainProgram->SetUniform("material1.Ms", glm::vec3(0.0f));	// Specular material reflectance
-	pMainProgram->SetUniform("material1.shininess", 15.0f);		// Shininess material property
-
-    pMainProgram->SetUniform("time", (float)m_gameTime);		// Game time in milliseconds
-    pMainProgram->SetUniform("lights[1].position", viewMatrix*glm::vec4(m_pPlayer->GetPosition(), 1));// Position of light at playerPosition
-    pMainProgram->SetUniform("lights[1].La", glm::vec3(0.3f));		// Ambient colour of light
-
-    //if boosting alter the ambient colour to be more blue
-    if (m_pPlayer->GetBoost() > 1.0f) {
-        pMainProgram->SetUniform("lights[1].La", glm::vec3(0.24f, 0.89f, 0.75f) * m_pPlayer->GetBoost());		
-    } else {
-        pMainProgram->SetUniform("lights[1].La", glm::vec3(0.3f));		
-    }
-
-    if ((int)(m_gameTime/1000) % 3 == 0) {
-        pMainProgram->SetUniform("lights[1].Ld", glm::vec3(3.0f, 0.0f, 0.0f));
-        pMainProgram->SetUniform("lights[1].Ls", glm::vec3(3.0f, 0.0f, 0.0f));
-    } else if ((int)(m_gameTime/1000) % 2 == 0) {
-        pMainProgram->SetUniform("lights[1].Ld", glm::vec3(0.0f, 3.0f, 0.0f));
-        pMainProgram->SetUniform("lights[1].Ls", glm::vec3(0.0f, 3.0f, 0.0f));
-    } else if ((int)(m_gameTime/1000) % 1 == 0) {
-        pMainProgram->SetUniform("lights[1].Ld", glm::vec3(0.0f, 0.0f, 3.0f));
-        pMainProgram->SetUniform("lights[1].Ls", glm::vec3(0.0f, 0.0f, 3.0f));
-    }
-    pMainProgram->SetUniform("lights[1].direction", glm::normalize(viewNormalMatrix*glm::vec3(m_pPlayer->GetUpVector() * -1.0f * 5.0f)));// Direction of light
-    pMainProgram->SetUniform("lights[1].exponent", 10.0f);
-    pMainProgram->SetUniform("lights[1].cutoff", 55.0f);
-    		
-
-	// Render the skybox and terrain with full ambient reflectance 
-	modelViewMatrixStack.Push();
-		pMainProgram->SetUniform("renderSkybox", true);
-		// Translate the modelview matrix to the camera eye point so skybox stays centred around camera
-		glm::vec3 vEye = m_pCamera->GetPosition();
-		modelViewMatrixStack.Translate(vEye);
-		pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-		pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-		m_pSkybox->Render();
-		pMainProgram->SetUniform("renderSkybox", false);
-	modelViewMatrixStack.Pop();
-    
-	// Turn on diffuse + specular materials
-	pMainProgram->SetUniform("material1.Ma", glm::vec3(0.5f));	// Ambient material reflectance
-	pMainProgram->SetUniform("material1.Md", glm::vec3(0.5f));	// Diffuse material reflectance
-	pMainProgram->SetUniform("material1.Ms", glm::vec3(1.0f));	// Specular material reflectance	
-       
-    // Render the square pyramid
-    modelViewMatrixStack.Push();
-        modelViewMatrixStack.Translate(glm::vec3(600.0f, -360.0f + sin(m_gameTime/1000)*30.0f, -1780.0f));
-        modelViewMatrixStack.Rotate(glm::vec3(0.0f, 1.0f,0.0f), (m_gameTime / 1000)*0.25f);
-        modelViewMatrixStack.Scale(20.0f);
-        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-        m_pSquarePyramid->Render();
-    modelViewMatrixStack.Pop();
-
-    // Render the Planet
-    modelViewMatrixStack.Push(); 
-        //pMainProgram->SetUniform("bUseTexture", true);
-        modelViewMatrixStack.Translate(glm::vec3(0.0f, 0.0f, 0.0f));
-        modelViewMatrixStack.Rotate(glm::vec3(0.0f, 1.0f, 0.0f), (m_gameTime / 1000) * 0.02f);
-        modelViewMatrixStack.Scale(500.0f);
-        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-        m_pPlanet->Render();
-    modelViewMatrixStack.Pop();
-
-    //Render the collidables
-    if (m_collidableObjects != NULL) {
-        for (unsigned int i = 0; i < m_collidableObjects->size(); i++) {
-            modelViewMatrixStack.Push();
-                pMainProgram->SetUniform("bUseTexture", true);
-                modelViewMatrixStack.Translate((*m_collidableObjects)[i]->GetPosition());
-                modelViewMatrixStack *= (*m_collidableObjects)[i]->GetPlayerOrientation();
-                //constantly rotates
-                glm::vec3 rotationalVector = glm::vec3(0, 0, 0);
-                if ((*m_collidableObjects)[i]->GetType() == "ASTEROID") {
-                    rotationalVector = (*m_collidableObjects)[i]->GetTNBFrame().T;
-                } else if ((*m_collidableObjects)[i]->GetType() == "POWERUP") {
-                    rotationalVector = (*m_collidableObjects)[i]->GetTNBFrame().B;
-                }
-                modelViewMatrixStack.Rotate(rotationalVector, (m_gameTime / 1000));
-                modelViewMatrixStack.Scale((*m_collidableObjects)[i]->GetRadius());
-                pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-                pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-                (*m_collidableObjects)[i]->Render();
-            modelViewMatrixStack.Pop();
-        }
-    }
-    //render player
-    modelViewMatrixStack.Push();
-        pMainProgram->SetUniform("bUseTexture", true);
-        m_pPlayer->GetPosition().y += sin(m_gameTime / 250)*m_pPlayer->GetSpeed() * 0.3f;
-        modelViewMatrixStack.Translate(m_pPlayer->GetPosition());
-        modelViewMatrixStack *= m_pPlayer->GetPlayerOrientation();
-        modelViewMatrixStack.Rotate(glm::vec3(1.0f, 0.0f, 0.0f), -m_pPlayer->GetSideSpeed() * 0.4f);
-        modelViewMatrixStack.Scale(m_pPlayer->GetScale());
-        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-        m_pPlayer->Render();
-    modelViewMatrixStack.Pop();
-
-    //Enabling transparent texture
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    
-    //render track
-    modelViewMatrixStack.Push();
-        pMainProgram->SetUniform("bUseTexture", true);
-        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-        m_pCatmullRom->RenderTrack();
-    modelViewMatrixStack.Pop();
-
-    
-    //render isocahedron
-    modelViewMatrixStack.Push();
-        pMainProgram->SetUniform("bUseTexture", true);
-        modelViewMatrixStack.Translate(glm::vec3(440, -390, -1550));
-        modelViewMatrixStack.Scale(10.0f);
-        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-        m_pIsocahedron->Render();
-    modelViewMatrixStack.Pop();
-    
-    //Render player Shield
-    modelViewMatrixStack.Push();
-        pMainProgram->SetUniform("bUseTexture", true);
-        modelViewMatrixStack.Translate(m_pPlayer->GetPosition());
-        modelViewMatrixStack *= m_pPlayer->GetPlayerOrientation();
-        modelViewMatrixStack.Rotate(glm::vec3(1.0f, 0.0f, 0.0f), -m_pPlayer->GetSideSpeed() * 0.4f);
-        modelViewMatrixStack.Scale(m_pPlayer->GetScale() * 4.0f);
-        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-        m_pPlayer->RenderShield();
-    modelViewMatrixStack.Pop();
-
+    //rendering with FBO
+    //m_pFBO->Bind();
+    RenderScene(modelViewMatrixStack, 0);
+    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    //RenderScene(modelViewMatrixStack, 1);
 
     CShaderProgram *pGUIShader = (*m_pShaderPrograms)[2];
     pGUIShader->UseProgram();
 
-
+    //--------RENDERING HUD AND TEXT-----------
     //Render GUI background
     if (m_displayHUD) {
         //Displays backgroundplane that will act as hud for player 
@@ -506,7 +354,7 @@ void Game::Render()
             pGUIShader->SetUniform("timeBoosting", (float)m_pPlayer->GetTimeBoosting());
             pGUIShader->SetUniform("numberBoosts", (float)m_pPlayer->GetNumBoost());
             pGUIShader->SetUniform("maxBoost", (float)m_pPlayer->GetMaxBoost()); 
-            m_pGUI->Render();
+            m_pGUI->Render(false);
         modelViewMatrixStack.Pop();
         //displays text on hud showing speed, boost status, shields, current lap, current time.
         CShaderProgram *fontProgram = (*m_pShaderPrograms)[1];
@@ -559,7 +407,197 @@ void Game::Render()
 	SwapBuffers(m_gameWindow.Hdc());		
 
 }
+void Game::RenderScene(glutil::MatrixStack &modelViewMatrixStack, int pass) {
 
+    // Clear the buffers and enable depth testing (z-buffering)
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+
+    // Use the main shader program 
+    CShaderProgram *pMainProgram = (*m_pShaderPrograms)[0];
+    pMainProgram->UseProgram();
+    pMainProgram->SetUniform("bUseTexture", true);
+    pMainProgram->SetUniform("sampler0", 0);
+    pMainProgram->SetUniform("CubeMapTex", 1);
+
+
+    // Set the projection matrix
+    pMainProgram->SetUniform("matrices.projMatrix", m_pCamera->GetPerspectiveProjectionMatrix());
+
+    // Call LookAt to create the view matrix and put this on the modelViewMatrix stack. 
+    // Store the view matrix and the normal matrix associated with the view matrix for later (they're useful for lighting -- since lighting is done in eye coordinates)
+    modelViewMatrixStack.LookAt(m_pCamera->GetPosition(), m_pCamera->GetView(), m_pCamera->GetUpVector());
+    glm::mat4 viewMatrix = modelViewMatrixStack.Top();
+    glm::mat3 viewNormalMatrix = m_pCamera->ComputeNormalMatrix(viewMatrix);
+
+
+    // Set light and materials in main shader program
+    pMainProgram->SetUniform("numberOfPowerups", 2);
+    glm::vec4 lightPosition1 = glm::vec4(950, -45, -1600, 1); // Position of light source *in world coordinates*
+    pMainProgram->SetUniform("lights[0].position", viewMatrix*lightPosition1); // Position of light source *in eye coordinates*
+    pMainProgram->SetUniform("lights[0].Ld", glm::vec3(1.5f));		// Diffuse colour of light
+    pMainProgram->SetUniform("lights[0].Ls", glm::vec3(1.0f));		// Specular colour of light
+    pMainProgram->SetUniform("material1.Ma", glm::vec3(1.0f));	// Ambient material reflectance
+    pMainProgram->SetUniform("material1.Md", glm::vec3(0.0f));	// Diffuse material reflectance
+    pMainProgram->SetUniform("material1.Ms", glm::vec3(0.0f));	// Specular material reflectance
+    pMainProgram->SetUniform("material1.shininess", 15.0f);		// Shininess material property
+
+    pMainProgram->SetUniform("time", (float)m_gameTime);		// Game time in milliseconds
+    pMainProgram->SetUniform("lights[1].position", viewMatrix*glm::vec4(m_pPlayer->GetPosition() + (m_pPlayer->GetUpVector() * -0.2f), 1));// Position of light at playerPosition
+    pMainProgram->SetUniform("lights[1].La", glm::vec3(0.3f));		// Ambient colour of light
+
+    //if boosting alter the ambient colour to be more blue
+    if (m_pPlayer->GetBoost() > 1.0f) {
+        pMainProgram->SetUniform("lights[1].La", glm::vec3(0.24f, 0.89f, 0.75f) * m_pPlayer->GetBoost());
+    } else {
+        pMainProgram->SetUniform("lights[1].La", glm::vec3(0.3f));
+    }
+
+    if ((int)(m_gameTime / 1000) % 3 == 0) {
+        pMainProgram->SetUniform("lights[1].Ld", glm::vec3(3.0f, 0.0f, 0.0f));
+        pMainProgram->SetUniform("lights[1].Ls", glm::vec3(3.0f, 0.0f, 0.0f));
+    } else if ((int)(m_gameTime / 1000) % 2 == 0) {
+        pMainProgram->SetUniform("lights[1].Ld", glm::vec3(0.0f, 3.0f, 0.0f));
+        pMainProgram->SetUniform("lights[1].Ls", glm::vec3(0.0f, 3.0f, 0.0f));
+    } else if ((int)(m_gameTime / 1000) % 1 == 0) {
+        pMainProgram->SetUniform("lights[1].Ld", glm::vec3(0.0f, 0.0f, 3.0f));
+        pMainProgram->SetUniform("lights[1].Ls", glm::vec3(0.0f, 0.0f, 3.0f));
+    }
+    pMainProgram->SetUniform("lights[1].direction", glm::normalize(viewNormalMatrix*glm::vec3(m_pPlayer->GetUpVector() * -1.0f * 5.0f)));// Direction of light
+    pMainProgram->SetUniform("lights[1].exponent", 10.0f);
+    pMainProgram->SetUniform("lights[1].cutoff", 55.0f);
+
+
+    // Render the skybox and terrain with full ambient reflectance 
+    modelViewMatrixStack.Push();
+        pMainProgram->SetUniform("renderSkybox", true);
+        // Translate the modelview matrix to the camera eye point so skybox stays centred around camera
+        glm::vec3 vEye = m_pCamera->GetPosition();
+        modelViewMatrixStack.Translate(vEye);
+        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+        m_pSkybox->Render();
+        pMainProgram->SetUniform("renderSkybox", false);
+    modelViewMatrixStack.Pop();
+
+    // Turn on diffuse + specular materials
+    pMainProgram->SetUniform("material1.Ma", glm::vec3(0.5f));	// Ambient material reflectance
+    pMainProgram->SetUniform("material1.Md", glm::vec3(0.5f));	// Diffuse material reflectance
+    pMainProgram->SetUniform("material1.Ms", glm::vec3(1.0f));	// Specular material reflectance	
+
+    // Render the square pyramid
+    modelViewMatrixStack.Push();
+        modelViewMatrixStack.Translate(glm::vec3(600.0f, -360.0f + sin(m_gameTime / 1000)*30.0f, -1780.0f));
+        modelViewMatrixStack.Rotate(glm::vec3(0.0f, 1.0f, 0.0f), (m_gameTime / 1000)*0.25f);
+        modelViewMatrixStack.Scale(20.0f);
+        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+        m_pSquarePyramid->Render();
+    modelViewMatrixStack.Pop();
+
+    // Render the Planet
+    modelViewMatrixStack.Push();
+        //pMainProgram->SetUniform("bUseTexture", true);
+        modelViewMatrixStack.Translate(glm::vec3(0.0f, 0.0f, 0.0f));
+        modelViewMatrixStack.Rotate(glm::vec3(0.0f, 1.0f, 0.0f), (m_gameTime / 1000) * 0.02f);
+        modelViewMatrixStack.Scale(500.0f);
+        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+        m_pPlanet->Render();
+    modelViewMatrixStack.Pop();
+
+    //Render the collidables
+    if (m_collidableObjects != NULL) {
+        for (unsigned int i = 0; i < m_collidableObjects->size(); i++) {
+            modelViewMatrixStack.Push();
+            pMainProgram->SetUniform("bUseTexture", true);
+            modelViewMatrixStack.Translate((*m_collidableObjects)[i]->GetPosition());
+            modelViewMatrixStack *= (*m_collidableObjects)[i]->GetPlayerOrientation();
+            //constantly rotates
+            glm::vec3 rotationalVector = glm::vec3(0, 0, 0);
+            if ((*m_collidableObjects)[i]->GetType() == "ASTEROID") {
+                rotationalVector = (*m_collidableObjects)[i]->GetTNBFrame().T;
+            } else if ((*m_collidableObjects)[i]->GetType() == "POWERUP") {
+                rotationalVector = (*m_collidableObjects)[i]->GetTNBFrame().B;
+            }
+            modelViewMatrixStack.Rotate(rotationalVector, (m_gameTime / 1000));
+            modelViewMatrixStack.Scale((*m_collidableObjects)[i]->GetRadius());
+            pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+            pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+            (*m_collidableObjects)[i]->Render();
+            modelViewMatrixStack.Pop();
+        }
+    }
+    //render player
+    modelViewMatrixStack.Push();
+        pMainProgram->SetUniform("bUseTexture", true);
+        m_pPlayer->GetPosition().y += sin(m_gameTime / 250)*m_pPlayer->GetSpeed() * 0.3f;
+        modelViewMatrixStack.Translate(m_pPlayer->GetPosition());
+        modelViewMatrixStack *= m_pPlayer->GetPlayerOrientation();
+        modelViewMatrixStack.Rotate(glm::vec3(1.0f, 0.0f, 0.0f), -m_pPlayer->GetSideSpeed() * 0.4f);
+        modelViewMatrixStack.Scale(m_pPlayer->GetScale());
+        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+        m_pPlayer->Render();
+    modelViewMatrixStack.Pop();
+
+    //Enabling transparent texture
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    //render track
+    modelViewMatrixStack.Push();
+        pMainProgram->SetUniform("bUseTexture", true);
+        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+        m_pCatmullRom->RenderTrack();
+    modelViewMatrixStack.Pop();
+
+
+    //render isocahedron
+    modelViewMatrixStack.Push();
+        pMainProgram->SetUniform("bUseTexture", true);
+        modelViewMatrixStack.Translate(glm::vec3(440, -390, -1550));
+        modelViewMatrixStack.Scale(10.0f);
+        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+        m_pIsocahedron->Render();
+    modelViewMatrixStack.Pop();
+
+    //Render player Shield
+    modelViewMatrixStack.Push();
+        pMainProgram->SetUniform("bUseTexture", true);
+        modelViewMatrixStack.Translate(m_pPlayer->GetPosition());
+        modelViewMatrixStack *= m_pPlayer->GetPlayerOrientation();
+        modelViewMatrixStack.Rotate(glm::vec3(1.0f, 0.0f, 0.0f), -m_pPlayer->GetSideSpeed() * 0.4f);
+        modelViewMatrixStack.Scale(m_pPlayer->GetScale() * 4.0f);
+        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+        m_pPlayer->RenderShield();
+    modelViewMatrixStack.Pop();
+
+    /*
+    if (pass == 1) {
+        // Render the plane for the TV
+        // Back face actually places the horse the right way round
+        glDisable(GL_CULL_FACE);
+        modelViewMatrixStack.Push();
+            modelViewMatrixStack.Translate(glm::vec3(400.0f, -328.0f, -1360.0f));
+            modelViewMatrixStack.Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 90.0);
+            modelViewMatrixStack.Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 180.0);
+            modelViewMatrixStack.Scale(-1.0);
+            pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+            pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+            // To turn off texture mapping and use the plane colour only (currently white material), uncomment the next line
+            //pMainProgram->SetUniform("bUseTexture", false);
+            m_pFBO->BindTexture(0);
+            m_pFrameBufferWindow->Render(false);
+            modelViewMatrixStack.Pop();
+        glEnable(GL_CULL_FACE);
+    }
+    */
+}
 // Update method runs repeatedly with the Render method
 void Game::Update()
 {

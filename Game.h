@@ -2,7 +2,7 @@
 
 #include "Common.h"
 #include "GameWindow.h"
-
+#include "MatrixStack.h"
 // Classes used in game.  For a new class, declare it here and provide a pointer to an object of this class below.  Then, in Game.cpp, 
 // include the header.  In the Game constructor, set the pointer to NULL and in Game::Initialise, create a new object.  Don't forget to 
 // delete the object in the destructor.   
@@ -22,6 +22,7 @@ class CCube;
 class CSquarePyramid;
 class CCollidable;
 class CIsocahedron;
+class CFrameBufferObject;
 class Game {
 private:
 	// Three main methods used in the game.  Initialise runs once, while Update and Render run repeatedly in the game loop.
@@ -48,7 +49,8 @@ private:
     CIsocahedron *m_pIsocahedron;
 	// Some other member variables
     vector<CCollidable *> *m_collidableObjects;
-
+    CFrameBufferObject *m_pFBO;
+    CPlane *m_pFrameBufferWindow;
     float m_currentDistance;
 	double m_dt;
 	int m_framesPerSecond;
@@ -73,6 +75,7 @@ private:
     void UpdateCollidables();
     void CheckGameOver();
     void Reset();
+    void RenderScene(glutil::MatrixStack &modelViewMatrixStack, int pass);
 	GameWindow m_gameWindow;
 	HINSTANCE m_hInstance;
 	int m_frameCount;
