@@ -159,6 +159,8 @@ void Game::Initialise()
 	sShaderFileNames.push_back("textShader.frag");
     sShaderFileNames.push_back("guiBackgroundShader.vert");
     sShaderFileNames.push_back("guiBackgroundShader.frag");
+    sShaderFileNames.push_back("postProcessing.vert");
+    sShaderFileNames.push_back("postProcessing.frag");
 
 	for (int i = 0; i < (int) sShaderFileNames.size(); i++) {
 		string sExt = sShaderFileNames[i].substr((int) sShaderFileNames[i].size()-4, 4);
@@ -201,6 +203,13 @@ void Game::Initialise()
     pGUIShader->AddShaderToProgram(&shShaders[5]);
     pGUIShader->LinkProgram();
     m_pShaderPrograms->push_back(pGUIShader);
+
+    CShaderProgram *pPostProcessingShader = new CShaderProgram;
+    pPostProcessingShader->CreateProgram();
+    pPostProcessingShader->AddShaderToProgram(&shShaders[6]);
+    pPostProcessingShader->AddShaderToProgram(&shShaders[7]);
+    pPostProcessingShader->LinkProgram();
+    m_pShaderPrograms->push_back(pPostProcessingShader);
 
 	// Create the skybox
 	// Skybox downloaded from https://opengameart.org/content/space-skybox-1
@@ -312,7 +321,7 @@ void Game::Initialise()
     }
 
     //create FBO
-    m_pFrameBufferWindow->Create("resources\\textures\\", "pyramid.jpg", 40.0f, 30.0f, 1.0f); //uses random texture, won't be shown
+    m_pFrameBufferWindow->Create("resources\\textures\\", "pyramid.jpg", width, height, 1.0f); //uses random texture, won't be shown
     m_pFBO->Create(width, height);
 }
 
@@ -328,9 +337,12 @@ void Game::Render()
 	modelViewMatrixStack.SetIdentity();
 
     //rendering with FBO
+    //glViewport(0, 0, m_pFBO->GetWidth(), m_pFBO->GetHeight());
     m_pFBO->Bind();
     RenderScene(modelViewMatrixStack, 0);
+    //glViewport(0, 0, width, height);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    modelViewMatrixStack.SetIdentity(); //Added before second pass
     RenderScene(modelViewMatrixStack, 1);
 
     CShaderProgram *pGUIShader = (*m_pShaderPrograms)[2];
@@ -576,24 +588,68 @@ void Game::RenderScene(glutil::MatrixStack &modelViewMatrixStack, int pass) {
         m_pPlayer->RenderShield();
     modelViewMatrixStack.Pop();
 
-    
+    //BETTER SHADER
     if (pass == 1) {
+        CShaderProgram *pPostProcessingShader = (*m_pShaderPrograms)[3];
+        pPostProcessingShader->UseProgram();
+        pPostProcessingShader->SetUniform("sampler0", 0);
+        pPostProcessingShader->SetUniform("width", (int)(m_pFBO->GetWidth()));
+        pPostProcessingShader->SetUniform("height", (int)(m_pFBO->GetHeight()));
+
         // Render the plane for the TV
         glDisable(GL_CULL_FACE);
         modelViewMatrixStack.Push();
-            modelViewMatrixStack.Translate(glm::vec3(400.0f, -328.0f, -1360.0f));
-            modelViewMatrixStack.Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 90.0);
-            modelViewMatrixStack.Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 180.0);
-            modelViewMatrixStack.Scale(-1.0f);
-            pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-            pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+            modelViewMatrixStack.SetIdentity();
+            modelViewMatrixStack.Translate(glm::vec3(m_pFBO->GetWidth()*0.5f, m_pFBO->GetHeight()*0.5f, 0.0f));
+            modelViewMatrixStack.Rotate(glm::vec3(1.0f, 0.0f, 0.0f), glm::radians(-90.0f));
+            //modelViewMatrixStack.Rotate(glm::vec3(0.0f, 1.0f, 0.0f), glm::radians(180.0f));
+            //modelViewMatrixStack.Scale(-1.0f);
+            pPostProcessingShader->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+            pPostProcessingShader->SetUniform("matrices.projMatrix", m_pCamera->GetOrthographicProjectionMatrix());
             // To turn off texture mapping and use the plane colour only (currently white material), uncomment the next line
-            //pMainProgram->SetUniform("bUseTexture", false);
             m_pFBO->BindTexture(0);
             m_pFrameBufferWindow->Render(false);
         modelViewMatrixStack.Pop();
         glEnable(GL_CULL_FACE);
     }
+     
+    /*
+    //MAIN SHADER
+    if (pass == 1) {
+        // Render the plane for the TV
+        glDisable(GL_CULL_FACE);
+        modelViewMatrixStack.Push();
+        modelViewMatrixStack.SetIdentity();
+        modelViewMatrixStack.Translate(glm::vec3(1.0f, 50.0f, 0.0f));
+        modelViewMatrixStack.Rotate(glm::vec3(1.0f, 0.0f, 0.0f), glm::radians(90.0f));
+        modelViewMatrixStack.Scale(-1.0f);
+        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+        pMainProgram->SetUniform("matrices.projMatrix", m_pCamera->GetOrthographicProjectionMatrix());
+        // To turn off texture mapping and use the plane colour only (currently white material), uncomment the next line
+        m_pFBO->BindTexture(0);
+        m_pFrameBufferWindow->Render(false);
+        modelViewMatrixStack.Pop();
+        glEnable(GL_CULL_FACE);
+    }
+    */
+    /* SCREEN
+    if (pass == 1) {
+        // Render the plane for the TV
+        glDisable(GL_CULL_FACE);
+        modelViewMatrixStack.Push();
+        modelViewMatrixStack.Translate(glm::vec3(400.0f, -328.0f, -1360.0f));
+        modelViewMatrixStack.Rotate(glm::vec3(1.0f, 0.0f, 0.0f), glm::radians(90.0));
+        modelViewMatrixStack.Scale(-1.0f);
+        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+        // To turn off texture mapping and use the plane colour only (currently white material), uncomment the next line
+        //pMainProgram->SetUniform("bUseTexture", false);
+        m_pFBO->BindTexture(0);
+        m_pFrameBufferWindow->Render(false);
+        modelViewMatrixStack.Pop();
+        glEnable(GL_CULL_FACE);
+    }
+    */
 }
 
 // Update method runs repeatedly with the Render method
@@ -677,42 +733,6 @@ void Game::Update()
             break;
     }
     m_pPlayer->BoostAcceleration(m_dt);
-	// Update the camera using the amount of time that has elapsed to avoid framerate dependent motion
-    /*
-    m_currentDistance += m_dt * 0.01f;
-    glm::vec3 position;
-    m_pCatmullRom->Sample(m_currentDistance, position);
-    glm::vec3 positionNext;
-    m_pCatmullRom->Sample(m_currentDistance + 1.0f, positionNext);
-    glm::vec3 T = glm::normalize(positionNext - position);
-    glm::vec3 look = position + (T * 10.0f);
-    glm::vec3 up(0,1,0);
-
-    glm::vec3 N = glm::normalize(glm::cross(T, up));
-    glm::vec3 B = glm::normalize(glm::cross(N, T));
-    position += B * glm::vec3(0, 0.5f, 0);
-
-    m_pCamera->Set(position, look, up);
-    */
-	//
-	/*
-	static float t = 0.0f;
-	t += 0.0005f * (float)m_dt;
-	if (t > 1.0f)
-	t = 0.0f;
-
-	CCatmullRom cr;
-	glm::vec3 p0 = glm::vec3(-500, 10, -200);
-	glm::vec3 p1 = glm::vec3(0, 10, -200);
-	glm::vec3 p2 = glm::vec3(0, 10, 200);
-	glm::vec3 p3 = glm::vec3(-500, 10, 200);
-
-
-
-	glm::vec3 x = cr.Interpolate(p0, p1, p2, p3, t);
-
-	m_pCamera->Set(x, glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
-	*/
     CheckCollisions();
     UpdateCollidables();
     CheckGameOver();
@@ -776,8 +796,6 @@ void Game::CheckGameOver() {
 
 void Game::DisplayFrameRate()
 {
-
-
 	CShaderProgram *fontProgram = (*m_pShaderPrograms)[1];
 
 	RECT dimensions = m_gameWindow.GetDimensions();
@@ -975,7 +993,7 @@ LRESULT Game::ProcessEvents(HWND window,UINT message, WPARAM w_param, LPARAM l_p
                     Reset();
                 }
                 break;
-                case 0x4D: //M key
+            case 0x4D: //M key
                 {
                     m_displayHUD = m_displayHUD == true ? false : true;
                 }
