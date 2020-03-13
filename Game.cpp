@@ -312,8 +312,8 @@ void Game::Initialise()
     }
 
     //create FBO
-    m_pFrameBufferWindow->Create("resources\\textures\\", "pyramid.jpg", width, height, 1.0f); //uses random texture, won't be shown
-    //m_pFBO->Create(width, height);
+    m_pFrameBufferWindow->Create("resources\\textures\\", "pyramid.jpg", 40.0f, 30.0f, 1.0f); //uses random texture, won't be shown
+    m_pFBO->Create(width, height);
 }
 
 // Render method runs repeatedly in a loop
@@ -328,10 +328,10 @@ void Game::Render()
 	modelViewMatrixStack.SetIdentity();
 
     //rendering with FBO
-    //m_pFBO->Bind();
+    m_pFBO->Bind();
     RenderScene(modelViewMatrixStack, 0);
-    //glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    //RenderScene(modelViewMatrixStack, 1);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    RenderScene(modelViewMatrixStack, 1);
 
     CShaderProgram *pGUIShader = (*m_pShaderPrograms)[2];
     pGUIShader->UseProgram();
@@ -340,7 +340,7 @@ void Game::Render()
     //Render GUI background
     if (m_displayHUD) {
         //Displays backgroundplane that will act as hud for player 
-        //uses orthogrhics projection
+        //uses orthograhic projection
         glDisable(GL_DEPTH_TEST);
         modelViewMatrixStack.Push();
             modelViewMatrixStack.SetIdentity();
@@ -399,7 +399,6 @@ void Game::Render()
             m_pFtFont->Print("TIME: " + std::to_string((int)(m_gameTime * 0.001f)), width * 0.37, height * 0.3, 80);
         }
     }
-
 	// Draw the 2D graphics after the 3D graphics
 	DisplayFrameRate();
 
@@ -511,21 +510,21 @@ void Game::RenderScene(glutil::MatrixStack &modelViewMatrixStack, int pass) {
     if (m_collidableObjects != NULL) {
         for (unsigned int i = 0; i < m_collidableObjects->size(); i++) {
             modelViewMatrixStack.Push();
-            pMainProgram->SetUniform("bUseTexture", true);
-            modelViewMatrixStack.Translate((*m_collidableObjects)[i]->GetPosition());
-            modelViewMatrixStack *= (*m_collidableObjects)[i]->GetPlayerOrientation();
-            //constantly rotates
-            glm::vec3 rotationalVector = glm::vec3(0, 0, 0);
-            if ((*m_collidableObjects)[i]->GetType() == "ASTEROID") {
-                rotationalVector = (*m_collidableObjects)[i]->GetTNBFrame().T;
-            } else if ((*m_collidableObjects)[i]->GetType() == "POWERUP") {
-                rotationalVector = (*m_collidableObjects)[i]->GetTNBFrame().B;
-            }
-            modelViewMatrixStack.Rotate(rotationalVector, (m_gameTime / 1000));
-            modelViewMatrixStack.Scale((*m_collidableObjects)[i]->GetRadius());
-            pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-            pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-            (*m_collidableObjects)[i]->Render();
+                pMainProgram->SetUniform("bUseTexture", true);
+                modelViewMatrixStack.Translate((*m_collidableObjects)[i]->GetPosition());
+                modelViewMatrixStack *= (*m_collidableObjects)[i]->GetPlayerOrientation();
+                //constantly rotates
+                glm::vec3 rotationalVector = glm::vec3(0, 0, 0);
+                if ((*m_collidableObjects)[i]->GetType() == "ASTEROID") {
+                    rotationalVector = (*m_collidableObjects)[i]->GetTNBFrame().T;
+                } else if ((*m_collidableObjects)[i]->GetType() == "POWERUP") {
+                    rotationalVector = (*m_collidableObjects)[i]->GetTNBFrame().B;
+                }
+                modelViewMatrixStack.Rotate(rotationalVector, (m_gameTime / 1000));
+                modelViewMatrixStack.Scale((*m_collidableObjects)[i]->GetRadius());
+                pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+                pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+                (*m_collidableObjects)[i]->Render();
             modelViewMatrixStack.Pop();
         }
     }
@@ -577,27 +576,26 @@ void Game::RenderScene(glutil::MatrixStack &modelViewMatrixStack, int pass) {
         m_pPlayer->RenderShield();
     modelViewMatrixStack.Pop();
 
-    /*
+    
     if (pass == 1) {
         // Render the plane for the TV
-        // Back face actually places the horse the right way round
         glDisable(GL_CULL_FACE);
         modelViewMatrixStack.Push();
             modelViewMatrixStack.Translate(glm::vec3(400.0f, -328.0f, -1360.0f));
             modelViewMatrixStack.Rotate(glm::vec3(1.0f, 0.0f, 0.0f), 90.0);
             modelViewMatrixStack.Rotate(glm::vec3(0.0f, 0.0f, 1.0f), 180.0);
-            modelViewMatrixStack.Scale(-1.0);
+            modelViewMatrixStack.Scale(-1.0f);
             pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
             pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
             // To turn off texture mapping and use the plane colour only (currently white material), uncomment the next line
             //pMainProgram->SetUniform("bUseTexture", false);
             m_pFBO->BindTexture(0);
             m_pFrameBufferWindow->Render(false);
-            modelViewMatrixStack.Pop();
+        modelViewMatrixStack.Pop();
         glEnable(GL_CULL_FACE);
     }
-    */
 }
+
 // Update method runs repeatedly with the Render method
 void Game::Update()
 {
