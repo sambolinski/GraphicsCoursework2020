@@ -9,6 +9,7 @@ uniform sampler2D sampler0;  // The texture sampler
 uniform samplerCube CubeMapTex;
 uniform bool bUseTexture;    // A flag indicating if texture-mapping should be applied
 uniform bool renderSkybox;
+uniform bool pulse;
 uniform float time;
 in vec3 worldPosition;
 
@@ -99,6 +100,9 @@ void main()
 		vec3 sunColour = BlinnPhongModel(lights[0], position, normalize(normal));
 		vec3 ufoColour = BlinnPhongSpotlightModel(lights[1], position, normalize(normal));
 		vec3 vColour = ufoColour+sunColour;
+		if(pulse){
+			vColour.yz += abs(sin(time/500)*0.75f);
+		}
 		if (bUseTexture)
 			vOutputColour = vTexColour*vec4(vColour, 1.0f);	// Combine object colour and texture 
 		else

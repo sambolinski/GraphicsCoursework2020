@@ -67,6 +67,7 @@ Game::Game()
     m_pIsocahedron = NULL;
     m_pFBO = NULL;
     m_pFrameBufferWindow = NULL;
+    m_asteroids = NULL;
 
 	m_dt = 0.0;
 	m_framesPerSecond = 0;
@@ -100,6 +101,11 @@ Game::~Game()
     if (m_collidableObjects != NULL) {
         for (unsigned int i = 0; i < m_collidableObjects->size(); i++)
             delete (*m_collidableObjects)[i];
+    }
+    delete m_collidableObjects;    
+    if (m_asteroids != NULL) {
+        for (unsigned int i = 0; i < m_asteroids->size(); i++)
+            delete (*m_asteroids)[i];
     }
     delete m_collidableObjects;
 
@@ -139,6 +145,7 @@ void Game::Initialise()
     m_collidableObjects = new vector <CCollidable *>;
     m_pFBO = new CFrameBufferObject;
     m_pFrameBufferWindow = new CPlane;
+    m_asteroids = new vector<COpenAssetImportMesh *>;
 
 	RECT dimensions = m_gameWindow.GetDimensions();
 
@@ -161,6 +168,8 @@ void Game::Initialise()
     sShaderFileNames.push_back("guiBackgroundShader.frag");
     sShaderFileNames.push_back("postProcessing.vert");
     sShaderFileNames.push_back("postProcessing.frag");
+    sShaderFileNames.push_back("planetRing.vert");
+    sShaderFileNames.push_back("planetRing.frag");
 
 	for (int i = 0; i < (int) sShaderFileNames.size(); i++) {
 		string sExt = sShaderFileNames[i].substr((int) sShaderFileNames[i].size()-4, 4);
@@ -209,7 +218,14 @@ void Game::Initialise()
     pPostProcessingShader->AddShaderToProgram(&shShaders[6]);
     pPostProcessingShader->AddShaderToProgram(&shShaders[7]);
     pPostProcessingShader->LinkProgram();
-    m_pShaderPrograms->push_back(pPostProcessingShader);
+    m_pShaderPrograms->push_back(pPostProcessingShader);    
+    
+    CShaderProgram *pPlanetRingShader = new CShaderProgram;
+    pPlanetRingShader->CreateProgram();
+    pPlanetRingShader->AddShaderToProgram(&shShaders[8]);
+    pPlanetRingShader->AddShaderToProgram(&shShaders[9]);
+    pPlanetRingShader->LinkProgram();
+    m_pShaderPrograms->push_back(pPlanetRingShader);
 
 	// Create the skybox
 	// Skybox downloaded from https://opengameart.org/content/space-skybox-1
@@ -319,7 +335,15 @@ void Game::Initialise()
             break;
         }
     }
-
+    glm::vec3 planetPosition(0,0,0);
+    float ringRadius;
+    int numberOfMeteors;
+    int numberOfLayers;
+    for (int i = 0; i < 100; i++) {
+        COpenAssetImportMesh *asteroid = new COpenAssetImportMesh;
+        asteroid->Load("resources\\models\\Asteroid\\Asteroid1.obj");
+        m_asteroids->push_back(asteroid);
+    }
     //create FBO
     m_pFrameBufferWindow->Create("resources\\textures\\", "pyramid.jpg", width, height, 1.0f); //uses random texture, won't be shown
     m_pFBO->Create(width, height);
@@ -517,7 +541,29 @@ void Game::RenderScene(glutil::MatrixStack &modelViewMatrixStack, int pass) {
         pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
         m_pPlanet->Render();
     modelViewMatrixStack.Pop();
+    float ringRadius = 800;
+    
+    if (m_asteroids != NULL) {
+        float angleIncrement = 360 / m_asteroids->size();
+        int numberPerLayer = (int)(m_asteroids->size() / 4);
+        for (unsigned int i = 0; i < m_asteroids->size(); i++) {
+            int currentLayer = (int)(i / numberPerLayer);
+            float currentRadius = ringRadius - (currentLayer * 30);
+            float x = currentRadius * cos((i*angleIncrement) + (currentLayer * 3));
+            float z = currentRadius * sin((i*angleIncrement) + (currentLayer * 3));
+            glm::vec3 planetPosition = glm::vec3(x, 0, z);
+            modelViewMatrixStack.Push();
+                pMainProgram->SetUniform("bUseTexture", true);
+                modelViewMatrixStack.Translate(glm::vec3(0,0,0) + planetPosition);
+                modelViewMatrixStack.Scale(10.0f);
+                pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+                pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+                (*m_asteroids)[i]->Render();
+            modelViewMatrixStack.Pop();
 
+        }
+    }
+    
     //Render the collidables
     if (m_collidableObjects != NULL) {
         for (unsigned int i = 0; i < m_collidableObjects->size(); i++) {
@@ -528,8 +574,10 @@ void Game::RenderScene(glutil::MatrixStack &modelViewMatrixStack, int pass) {
                 //constantly rotates
                 glm::vec3 rotationalVector = glm::vec3(0, 0, 0);
                 if ((*m_collidableObjects)[i]->GetType() == "ASTEROID") {
+                    pMainProgram->SetUniform("pulse", false);
                     rotationalVector = (*m_collidableObjects)[i]->GetTNBFrame().T;
                 } else if ((*m_collidableObjects)[i]->GetType() == "POWERUP") {
+                    pMainProgram->SetUniform("pulse", true);
                     rotationalVector = (*m_collidableObjects)[i]->GetTNBFrame().B;
                 }
                 modelViewMatrixStack.Rotate(rotationalVector, (m_gameTime / 1000));
@@ -537,9 +585,11 @@ void Game::RenderScene(glutil::MatrixStack &modelViewMatrixStack, int pass) {
                 pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
                 pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
                 (*m_collidableObjects)[i]->Render();
+                pMainProgram->SetUniform("pulse", false);
             modelViewMatrixStack.Pop();
         }
     }
+    
     //render player
     modelViewMatrixStack.Push();
         pMainProgram->SetUniform("bUseTexture", true);
@@ -595,6 +645,7 @@ void Game::RenderScene(glutil::MatrixStack &modelViewMatrixStack, int pass) {
         pPostProcessingShader->SetUniform("sampler0", 0);
         pPostProcessingShader->SetUniform("width", (int)(m_pFBO->GetWidth()));
         pPostProcessingShader->SetUniform("height", (int)(m_pFBO->GetHeight()));
+        pPostProcessingShader->SetUniform("isBoosting", m_pPlayer->GetBoost() > 1.0f);
 
         // Render the plane for the TV
         glDisable(GL_CULL_FACE);

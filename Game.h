@@ -51,6 +51,7 @@ private:
     vector<CCollidable *> *m_collidableObjects;
     CFrameBufferObject *m_pFBO;
     CPlane *m_pFrameBufferWindow;
+    vector<COpenAssetImportMesh *> *m_asteroids;
     float m_currentDistance;
 	double m_dt;
 	int m_framesPerSecond;

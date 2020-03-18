@@ -57,6 +57,7 @@ public:
     COpenAssetImportMesh();
     ~COpenAssetImportMesh();
     bool Load(const std::string& Filename);
+    GLuint &GetVAO() { return m_vao; }
     void Render();
 
 private:
