@@ -30,6 +30,7 @@ struct MaterialInfo
 uniform LightInfo light1; 
 uniform MaterialInfo material1; 
 uniform int numberOfAsteroids;
+uniform float time;
 // Layout of vertex attributes in VBO
 layout (location = 0) in vec3 inPosition;
 layout (location = 1) in vec2 inCoord;
@@ -61,28 +62,31 @@ vec3 PhongModel(vec4 eyePosition, vec3 eyeNorm)
 	return ambient + diffuse + specular;
 
 }
-
+///https://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl
+float pseudoRandom(vec2 vector){
+    return fract(sin(dot(vector.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
 vec3 positionOfAsteroid(int i){
     float ringRadius = 750;
-    int numberOfAsteroids = 100;
-    float angleIncrement = 360 / numberOfAsteroids;
-    int numberPerLayer = (numberOfAsteroids / 4);
+    float angleIncrement = 360.0f / numberOfAsteroids;
+    int numberPerLayer = (numberOfAsteroids / 30);
     int currentLayer = (i / numberPerLayer);
-    float currentRadius = ringRadius - (currentLayer * 20.0f);
-    float x = currentRadius * cos((i*angleIncrement) + (currentLayer * 3));
-    float z = currentRadius * sin((i*angleIncrement) + (currentLayer * 3));
-    return vec3(x, 0, z);
+    float currentRadius = ringRadius - (currentLayer * 2.0f);
+    float x = currentRadius * cos((i*angleIncrement - time/30000) + (currentLayer * 3));
+    float z = currentRadius * sin((i*angleIncrement - time/30000) + (currentLayer * 3));
+    return vec3(x, pseudoRandom(vec2(i,0))*5.0f, z);
 }
 
 // This is the entry point into the vertex shader
 void main()
 {	
 	// Transform the vertex spatial position using 
-	gl_Position = matrices.projMatrix * matrices.modelViewMatrix * vec4(inPosition + positionOfAsteroid(gl_InstanceID), 1.0f);
+	vec3 asteroidPosition = (inPosition*pseudoRandom(vec2(gl_InstanceID,0))*5.0f) + positionOfAsteroid(gl_InstanceID);
+	gl_Position = matrices.projMatrix * matrices.modelViewMatrix * vec4(asteroidPosition, 1.0f);
 	
 	// Get the vertex normal and vertex position in eye coordinates
 	vec3 vEyeNorm = normalize(matrices.normalMatrix * inNormal);
-	vec4 vEyePosition = matrices.modelViewMatrix * vec4(inPosition, 1.0f);
+	vec4 vEyePosition = matrices.modelViewMatrix * vec4(asteroidPosition, 1.0f);
 		
 	// Apply the Phong model to compute the vertex colour
 	vColour = PhongModel(vEyePosition, vEyeNorm);

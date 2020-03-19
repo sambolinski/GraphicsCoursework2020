@@ -619,11 +619,12 @@ void Game::RenderScene(glutil::MatrixStack &modelViewMatrixStack, int pass) {
         pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
         m_pPlayer->RenderShield();
     modelViewMatrixStack.Pop();
-
+    
     //Render instanced
     CShaderProgram *pInstancedShader = (*m_pShaderPrograms)[4];
     pInstancedShader->UseProgram();
-    pInstancedShader->SetUniform("bUseTexture", false);
+    pInstancedShader->SetUniform("bUseTexture", true);
+    pInstancedShader->SetUniform("time", (float)m_gameTime);
     pInstancedShader->SetUniform("sampler0", 0);
     pInstancedShader->SetUniform("light1.position", viewMatrix*lightPosition1); // Position of light source *in eye coordinates*
     pInstancedShader->SetUniform("light1.Ld", glm::vec3(1.5f));		// Diffuse colour of light
@@ -633,17 +634,16 @@ void Game::RenderScene(glutil::MatrixStack &modelViewMatrixStack, int pass) {
     pInstancedShader->SetUniform("material1.Ms", glm::vec3(0.0f));	// Specular material reflectance
     pInstancedShader->SetUniform("material1.shininess", 15.0f);		// Shininess material property
 
-    int numberOfAsteroids = 1000;
+    int numberOfAsteroids = 3000;
     pInstancedShader->SetUniform("numberOfAsteroids", numberOfAsteroids);
     modelViewMatrixStack.Push();
         modelViewMatrixStack.Translate(glm::vec3(0, 0, 0));
-        modelViewMatrixStack.Scale(10.0f);
         pInstancedShader->SetUniform("matrices.projMatrix", m_pCamera->GetPerspectiveProjectionMatrix());
         pInstancedShader->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
         pInstancedShader->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
         m_pAsteroid->RenderInstanced(numberOfAsteroids);
     modelViewMatrixStack.Pop();
-
+    
     //POST PROCESSING
     if (pass == 1) {
         CShaderProgram *pPostProcessingShader = (*m_pShaderPrograms)[3];

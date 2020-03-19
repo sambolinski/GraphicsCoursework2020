@@ -15,7 +15,8 @@ void main()
 	vec4 vTexColour = texture(sampler0, vTexCoord);	
 
 	if (bUseTexture){
-		vOutputColour = vTexColour;//*vec4(vColour, 1.0f);	// Combine object colour and texture 
+		//vOutputColour = vTexColour;//*vec4(vColour, 1.0f);	// Combine object colour and texture 
+		vOutputColour = vTexColour*vec4(vColour, 1.0f);	// Combine object colour and texture 
 	}
 	else{
 		//vOutputColour = vec4(vColour, 1.0f);	// Just use the colour instead
