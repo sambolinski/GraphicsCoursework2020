@@ -52,6 +52,8 @@ private:
     CFrameBufferObject *m_pFBO;
     CPlane *m_pFrameBufferWindow;
     vector<COpenAssetImportMesh *> *m_asteroids;
+    vector<glm::mat4 *> *m_asteroidLocations;
+    COpenAssetImportMesh *m_pAsteroid;
     float m_currentDistance;
 	double m_dt;
 	int m_framesPerSecond;

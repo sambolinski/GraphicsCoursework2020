@@ -68,6 +68,8 @@ Game::Game()
     m_pFBO = NULL;
     m_pFrameBufferWindow = NULL;
     m_asteroids = NULL;
+    m_asteroidLocations = NULL;
+    m_pAsteroid = NULL;
 
 	m_dt = 0.0;
 	m_framesPerSecond = 0;
@@ -97,17 +99,25 @@ Game::~Game()
     delete m_pIsocahedron;
     delete m_pFBO;
     delete m_pFrameBufferWindow;
+    delete m_pAsteroid;
 
     if (m_collidableObjects != NULL) {
         for (unsigned int i = 0; i < m_collidableObjects->size(); i++)
             delete (*m_collidableObjects)[i];
     }
     delete m_collidableObjects;    
+
     if (m_asteroids != NULL) {
         for (unsigned int i = 0; i < m_asteroids->size(); i++)
             delete (*m_asteroids)[i];
     }
-    delete m_collidableObjects;
+    delete m_asteroids;
+
+    if (m_asteroidLocations != NULL) {
+        for (unsigned int i = 0; i < m_asteroidLocations->size(); i++)
+            delete (*m_asteroidLocations)[i];
+    }
+    delete m_asteroidLocations;
 
 	if (m_pShaderPrograms != NULL) {
 		for (unsigned int i = 0; i < m_pShaderPrograms->size(); i++)
@@ -146,6 +156,7 @@ void Game::Initialise()
     m_pFBO = new CFrameBufferObject;
     m_pFrameBufferWindow = new CPlane;
     m_asteroids = new vector<COpenAssetImportMesh *>;
+    m_asteroidLocations = new vector<glm::mat4 *>;
 
 	RECT dimensions = m_gameWindow.GetDimensions();
 
@@ -335,15 +346,8 @@ void Game::Initialise()
             break;
         }
     }
-    glm::vec3 planetPosition(0,0,0);
-    float ringRadius;
-    int numberOfMeteors;
-    int numberOfLayers;
-    for (int i = 0; i < 100; i++) {
-        COpenAssetImportMesh *asteroid = new COpenAssetImportMesh;
-        asteroid->Load("resources\\models\\Asteroid\\Asteroid1.obj");
-        m_asteroids->push_back(asteroid);
-    }
+    m_pAsteroid = new COpenAssetImportMesh;
+    m_pAsteroid->Load("resources\\models\\Asteroid\\Asteroid1.obj");
     //create FBO
     m_pFrameBufferWindow->Create("resources\\textures\\", "pyramid.jpg", width, height, 1.0f); //uses random texture, won't be shown
     m_pFBO->Create(width, height);
@@ -541,28 +545,6 @@ void Game::RenderScene(glutil::MatrixStack &modelViewMatrixStack, int pass) {
         pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
         m_pPlanet->Render();
     modelViewMatrixStack.Pop();
-    float ringRadius = 800;
-    
-    if (m_asteroids != NULL) {
-        float angleIncrement = 360 / m_asteroids->size();
-        int numberPerLayer = (int)(m_asteroids->size() / 4);
-        for (unsigned int i = 0; i < m_asteroids->size(); i++) {
-            int currentLayer = (int)(i / numberPerLayer);
-            float currentRadius = ringRadius - (currentLayer * 30);
-            float x = currentRadius * cos((i*angleIncrement) + (currentLayer * 3));
-            float z = currentRadius * sin((i*angleIncrement) + (currentLayer * 3));
-            glm::vec3 planetPosition = glm::vec3(x, 0, z);
-            modelViewMatrixStack.Push();
-                pMainProgram->SetUniform("bUseTexture", true);
-                modelViewMatrixStack.Translate(glm::vec3(0,0,0) + planetPosition);
-                modelViewMatrixStack.Scale(10.0f);
-                pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-                pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-                (*m_asteroids)[i]->Render();
-            modelViewMatrixStack.Pop();
-
-        }
-    }
     
     //Render the collidables
     if (m_collidableObjects != NULL) {
@@ -638,7 +620,31 @@ void Game::RenderScene(glutil::MatrixStack &modelViewMatrixStack, int pass) {
         m_pPlayer->RenderShield();
     modelViewMatrixStack.Pop();
 
-    //BETTER SHADER
+    //Render instanced
+    CShaderProgram *pInstancedShader = (*m_pShaderPrograms)[4];
+    pInstancedShader->UseProgram();
+    pInstancedShader->SetUniform("bUseTexture", false);
+    pInstancedShader->SetUniform("sampler0", 0);
+    pInstancedShader->SetUniform("light1.position", viewMatrix*lightPosition1); // Position of light source *in eye coordinates*
+    pInstancedShader->SetUniform("light1.Ld", glm::vec3(1.5f));		// Diffuse colour of light
+    pInstancedShader->SetUniform("light1.Ls", glm::vec3(1.0f));		// Specular colour of light
+    pInstancedShader->SetUniform("material1.Ma", glm::vec3(1.0f));	// Ambient material reflectance
+    pInstancedShader->SetUniform("material1.Md", glm::vec3(0.0f));	// Diffuse material reflectance
+    pInstancedShader->SetUniform("material1.Ms", glm::vec3(0.0f));	// Specular material reflectance
+    pInstancedShader->SetUniform("material1.shininess", 15.0f);		// Shininess material property
+
+    int numberOfAsteroids = 1000;
+    pInstancedShader->SetUniform("numberOfAsteroids", numberOfAsteroids);
+    modelViewMatrixStack.Push();
+        modelViewMatrixStack.Translate(glm::vec3(0, 0, 0));
+        modelViewMatrixStack.Scale(10.0f);
+        pInstancedShader->SetUniform("matrices.projMatrix", m_pCamera->GetPerspectiveProjectionMatrix());
+        pInstancedShader->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+        pInstancedShader->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+        m_pAsteroid->RenderInstanced(numberOfAsteroids);
+    modelViewMatrixStack.Pop();
+
+    //POST PROCESSING
     if (pass == 1) {
         CShaderProgram *pPostProcessingShader = (*m_pShaderPrograms)[3];
         pPostProcessingShader->UseProgram();
@@ -663,44 +669,6 @@ void Game::RenderScene(glutil::MatrixStack &modelViewMatrixStack, int pass) {
         modelViewMatrixStack.Pop();
         glEnable(GL_CULL_FACE);
     }
-     
-    /*
-    //MAIN SHADER
-    if (pass == 1) {
-        // Render the plane for the TV
-        glDisable(GL_CULL_FACE);
-        modelViewMatrixStack.Push();
-        modelViewMatrixStack.SetIdentity();
-        modelViewMatrixStack.Translate(glm::vec3(1.0f, 50.0f, 0.0f));
-        modelViewMatrixStack.Rotate(glm::vec3(1.0f, 0.0f, 0.0f), glm::radians(90.0f));
-        modelViewMatrixStack.Scale(-1.0f);
-        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-        pMainProgram->SetUniform("matrices.projMatrix", m_pCamera->GetOrthographicProjectionMatrix());
-        // To turn off texture mapping and use the plane colour only (currently white material), uncomment the next line
-        m_pFBO->BindTexture(0);
-        m_pFrameBufferWindow->Render(false);
-        modelViewMatrixStack.Pop();
-        glEnable(GL_CULL_FACE);
-    }
-    */
-    /* SCREEN
-    if (pass == 1) {
-        // Render the plane for the TV
-        glDisable(GL_CULL_FACE);
-        modelViewMatrixStack.Push();
-        modelViewMatrixStack.Translate(glm::vec3(400.0f, -328.0f, -1360.0f));
-        modelViewMatrixStack.Rotate(glm::vec3(1.0f, 0.0f, 0.0f), glm::radians(90.0));
-        modelViewMatrixStack.Scale(-1.0f);
-        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
-        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
-        // To turn off texture mapping and use the plane colour only (currently white material), uncomment the next line
-        //pMainProgram->SetUniform("bUseTexture", false);
-        m_pFBO->BindTexture(0);
-        m_pFrameBufferWindow->Render(false);
-        modelViewMatrixStack.Pop();
-        glEnable(GL_CULL_FACE);
-    }
-    */
 }
 
 // Update method runs repeatedly with the Render method

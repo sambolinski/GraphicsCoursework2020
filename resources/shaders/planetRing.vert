@@ -29,7 +29,7 @@ struct MaterialInfo
 // Lights and materials passed in as uniform variables from client programme
 uniform LightInfo light1; 
 uniform MaterialInfo material1; 
-
+uniform int numberOfAsteroids;
 // Layout of vertex attributes in VBO
 layout (location = 0) in vec3 inPosition;
 layout (location = 1) in vec2 inCoord;
@@ -61,27 +61,24 @@ vec3 PhongModel(vec4 eyePosition, vec3 eyeNorm)
 	return ambient + diffuse + specular;
 
 }
-//Planet Uniform
-//uniform vec3 planetPosition;
-//uniform float ringRadius;
-//uniform int numberOfMeteors;
-//uniform int numberOfLayers;
-//vec3 calculatePosition(){
-	//int numberPerLayer = (int)(numberOfMeteors/numberOfLayers);
-	//int currentLayer = gl_InstanceID%numberPerLayer;
-	//float angleIncrement = (360/gl_InstanceID)+(currentLayer*3);
-	//float currentRadius = ringRadius - (currentLayer*30);
-	//float x = currentRadius * cos(angleIncrement);
-	//float z = currentRadius * sin(angleIncrement);
-	//return vec3(x, 0, z);
-	
-//}
+
+vec3 positionOfAsteroid(int i){
+    float ringRadius = 750;
+    int numberOfAsteroids = 100;
+    float angleIncrement = 360 / numberOfAsteroids;
+    int numberPerLayer = (numberOfAsteroids / 4);
+    int currentLayer = (i / numberPerLayer);
+    float currentRadius = ringRadius - (currentLayer * 20.0f);
+    float x = currentRadius * cos((i*angleIncrement) + (currentLayer * 3));
+    float z = currentRadius * sin((i*angleIncrement) + (currentLayer * 3));
+    return vec3(x, 0, z);
+}
 
 // This is the entry point into the vertex shader
 void main()
 {	
 	// Transform the vertex spatial position using 
-	gl_Position = matrices.projMatrix * matrices.modelViewMatrix * vec4(inPosition, 1.0f);
+	gl_Position = matrices.projMatrix * matrices.modelViewMatrix * vec4(inPosition + positionOfAsteroid(gl_InstanceID), 1.0f);
 	
 	// Get the vertex normal and vertex position in eye coordinates
 	vec3 vEyeNorm = normalize(matrices.normalMatrix * inNormal);

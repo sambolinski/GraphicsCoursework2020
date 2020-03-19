@@ -59,6 +59,7 @@ public:
     bool Load(const std::string& Filename);
     GLuint &GetVAO() { return m_vao; }
     void Render();
+    void RenderInstanced(int numberOfInstanced);
 
 private:
     bool InitFromScene(const aiScene* pScene, const std::string& Filename);
