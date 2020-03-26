@@ -14,7 +14,12 @@ public:
         m_lifetime = 0;
         m_maxLifetime = 10;
     }
+};
 
-
+class CParticleManager{
+public:
+    std::vector<CParticle> m_particles;
+public:
+    CParticleManager() {}
 
 };

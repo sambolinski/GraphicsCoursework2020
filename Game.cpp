@@ -44,6 +44,7 @@ Source code drawn from a number of sources and examples, including contributions
 #include "Powerup.h"
 #include "Isocahedron.h"
 #include "FrameBufferObject.h"
+#include "Particle.h"
 
 // Constructor
 Game::Game()
@@ -181,6 +182,8 @@ void Game::Initialise()
     sShaderFileNames.push_back("postProcessing.frag");
     sShaderFileNames.push_back("planetRing.vert");
     sShaderFileNames.push_back("planetRing.frag");
+    sShaderFileNames.push_back("particleShader.vert");
+    sShaderFileNames.push_back("particleShader.frag");
 
 	for (int i = 0; i < (int) sShaderFileNames.size(); i++) {
 		string sExt = sShaderFileNames[i].substr((int) sShaderFileNames[i].size()-4, 4);
@@ -238,6 +241,13 @@ void Game::Initialise()
     pPlanetRingShader->LinkProgram();
     m_pShaderPrograms->push_back(pPlanetRingShader);
 
+    CShaderProgram *pParticleShader = new CShaderProgram;
+    pParticleShader->CreateProgram();
+    pParticleShader->AddShaderToProgram(&shShaders[10]);
+    pParticleShader->AddShaderToProgram(&shShaders[11]);
+    pParticleShader->LinkProgram();
+    m_pShaderPrograms->push_back(pParticleShader);
+
 	// Create the skybox
 	// Skybox downloaded from https://opengameart.org/content/space-skybox-1
 	m_pSkybox->Create(2500.0f);
@@ -246,6 +256,7 @@ void Game::Initialise()
 	//m_pPlanarTerrain->Create("resources\\textures\\", "grassfloor01.jpg", 2000.0f, 2000.0f, 50.0f); // Texture downloaded from http://www.psionicgames.com/?page_id=26 on 24 Jan 2013
 
 	m_pFtFont->LoadSystemFont("arial.ttf", 32);
+    m_pFtFont->LoadFont("resources\\fonts\\LazenbyCompLiquid.ttf", 30); //Font downloaded from :https://www.dafont.com/lazenby-computer.font on 04/03/2020 (CC BY-SA 4.0)
 	m_pFtFont->SetShaderProgram(pFontProgram);
     
 
@@ -365,10 +376,8 @@ void Game::Render()
 	modelViewMatrixStack.SetIdentity();
 
     //rendering with FBO
-    //glViewport(0, 0, m_pFBO->GetWidth(), m_pFBO->GetHeight());
     m_pFBO->Bind();
     RenderScene(modelViewMatrixStack, 0);
-    //glViewport(0, 0, width, height);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     modelViewMatrixStack.SetIdentity(); //Added before second pass
     RenderScene(modelViewMatrixStack, 1);
@@ -396,14 +405,16 @@ void Game::Render()
             pGUIShader->SetUniform("maxBoost", (float)m_pPlayer->GetMaxBoost()); 
             m_pGUI->Render(false);
         modelViewMatrixStack.Pop();
+
+
         //displays text on hud showing speed, boost status, shields, current lap, current time.
         CShaderProgram *fontProgram = (*m_pShaderPrograms)[1];
         glm::vec4 fontColour = glm::vec4(1.0f, 1.0f, 1.0f, 0.7f);
         fontProgram->UseProgram();
-        m_pFtFont->LoadFont("resources\\fonts\\LazenbyCompLiquid.ttf",30); //Font downloaded from :https://www.dafont.com/lazenby-computer.font on 04/03/2020 (CC BY-SA 4.0)
         fontProgram->SetUniform("matrices.modelViewMatrix", glm::mat4(1));
         fontProgram->SetUniform("matrices.projMatrix", m_pCamera->GetOrthographicProjectionMatrix());
         fontProgram->SetUniform("vColour", fontColour);
+
         m_pFtFont->Print("Time: " + std::to_string((int)(m_gameTime * 0.001f)), 0.0125f*width, height * 0.26f, 20);
         m_pFtFont->Print("Lap: " + std::to_string(m_pCatmullRom->CurrentLap(m_currentDistance)) +"/" + std::to_string(m_maxLaps), 0.235f*width, height * 0.26f, 20);
         m_pFtFont->Print("Boost: ", width * 0.045f, height * 0.185f, 30);
