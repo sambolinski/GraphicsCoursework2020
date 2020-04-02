@@ -203,7 +203,7 @@ void Game::Initialise()
 	}
 
     //MultiSampling
-    glEnable(GL_MULTISAMPLE);
+    glEnable(GL_MULTISAMPLE); //enabling anti-aliasing
 
 	// Create the main shader program
 	CShaderProgram *pMainProgram = new CShaderProgram;
