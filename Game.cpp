@@ -71,6 +71,7 @@ Game::Game()
     m_asteroids = NULL;
     m_asteroidLocations = NULL;
     m_pAsteroid = NULL;
+    m_pObelisk = NULL;
 
 	m_dt = 0.0;
 	m_framesPerSecond = 0;
@@ -101,6 +102,7 @@ Game::~Game()
     delete m_pFBO;
     delete m_pFrameBufferWindow;
     delete m_pAsteroid;
+    delete m_pObelisk;
 
     if (m_collidableObjects != NULL) {
         for (unsigned int i = 0; i < m_collidableObjects->size(); i++)
@@ -158,6 +160,8 @@ void Game::Initialise()
     m_pFrameBufferWindow = new CPlane;
     m_asteroids = new vector<COpenAssetImportMesh *>;
     m_asteroidLocations = new vector<glm::mat4 *>;
+    m_pAsteroid = new COpenAssetImportMesh;
+    m_pObelisk = new COpenAssetImportMesh;
 
 	RECT dimensions = m_gameWindow.GetDimensions();
 
@@ -280,12 +284,12 @@ void Game::Initialise()
     //Create the squarePyramid
     m_pSquarePyramid->Create("resources\\textures\\", "pyramid.jpg", 11.0f, 11.0f, 10.0f, 1.0f); //Texture by me
 
+    //m_pPlanet->Load("resources\\models\\Planet\\Planet.obj"); //made using blender
     m_pPlanet->Load("resources\\models\\Planet\\Planet.obj"); //made using blender
     m_pIsocahedron->Create("resources\\textures\\", "ShieldGreen.png");
 
     //Create the GUI background
     m_pGUI->Create("resources\\textures\\", "pyramid.jpg", width* 0.6f, height*0.5f, 1.0f);
-
     //Creating and initialising collidables
     unsigned int numberCollidables = 15;
     //Order = Obstacle Static, Obstacle Dynamic, Powerup Shield, Powerup Boost
@@ -357,8 +361,10 @@ void Game::Initialise()
             break;
         }
     }
-    m_pAsteroid = new COpenAssetImportMesh;
     m_pAsteroid->Load("resources\\models\\Asteroid\\Asteroid1.obj");
+
+
+    m_pObelisk->Load("resources\\models\\Obelisk\\Obelisk.obj");//Made using blender
     //create FBO
     m_pFrameBufferWindow->Create("resources\\textures\\", "pyramid.jpg", width, height, 1.0f); //uses random texture, won't be shown
     m_pFBO->Create(width, height);
@@ -580,6 +586,35 @@ void Game::RenderScene(glutil::MatrixStack &modelViewMatrixStack, int pass) {
         pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
         m_pPlanet->Render();
     modelViewMatrixStack.Pop();
+
+    // Render the Obelisks
+        //Using track to get positionS
+    glm::vec3 obeliskPosition;
+    glm::vec3 nextPosition;
+    m_pCatmullRom->Sample(0, obeliskPosition);
+    m_pCatmullRom->Sample(1, nextPosition);
+    glm::vec3 T = glm::normalize(nextPosition - obeliskPosition);
+    glm::vec3 N = glm::normalize(glm::cross(T, glm::vec3(0,1,0)));
+    glm::vec3 B = glm::normalize(glm::cross(N, T));
+    glm::vec3 fluctuate = B*(6.0f+((float)(sin(m_gameTime / 600))*2.0f));
+    modelViewMatrixStack.Push();
+        pMainProgram->SetUniform("bUseTexture", true);
+        modelViewMatrixStack.Translate(obeliskPosition + (N * m_pCatmullRom->GetTrackWidth() * 0.75f)+ fluctuate);
+        modelViewMatrixStack *= glm::mat4(glm::mat3(-T, B, -N));
+        modelViewMatrixStack.Scale(6.0f);
+        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+        m_pObelisk->Render();
+    modelViewMatrixStack.Pop();
+    modelViewMatrixStack.Push();
+        pMainProgram->SetUniform("bUseTexture", true);
+        modelViewMatrixStack.Translate(obeliskPosition - (N * m_pCatmullRom->GetTrackWidth() * 0.75f) + fluctuate);
+        modelViewMatrixStack *= glm::mat4(glm::mat3(-T, B, -N));
+        modelViewMatrixStack.Scale(6.0f);
+        pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
+        pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
+        m_pObelisk->Render();
+    modelViewMatrixStack.Pop();
     
     //Render the collidables
     if (m_collidableObjects != NULL) {
@@ -627,9 +662,11 @@ void Game::RenderScene(glutil::MatrixStack &modelViewMatrixStack, int pass) {
     //render track
     modelViewMatrixStack.Push();
         pMainProgram->SetUniform("bUseTexture", true);
+        pMainProgram->SetUniform("isTrack", true);
         pMainProgram->SetUniform("matrices.modelViewMatrix", modelViewMatrixStack.Top());
         pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
         m_pCatmullRom->RenderTrack();
+        pMainProgram->SetUniform("isTrack", false);
     modelViewMatrixStack.Pop();
 
 

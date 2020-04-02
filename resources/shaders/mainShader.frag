@@ -87,6 +87,8 @@ vec3 BlinnPhongSpotlightModel(LightInfo light, vec4 p, vec3 n){
 		return ambient;
 	}
 }
+
+uniform bool isTrack;
 void main()
 {
 
@@ -104,7 +106,11 @@ void main()
 			vColour.yz += abs(sin(time/500)*0.75f);
 		}
 		if (bUseTexture)
-			vOutputColour = vTexColour*vec4(vColour, 1.0f);	// Combine object colour and texture 
+			if(isTrack){
+				vOutputColour = vTexColour*vec4(vColour, 1.0f)*2.0f;	// Combine object colour and texture 
+			}else{
+				vOutputColour = vTexColour*vec4(vColour, 1.0f);	// Combine object colour and texture 			
+			}
 		else
 			vOutputColour = vec4(vColour, 1.0f);	// Just use the colour instead
 	}

@@ -54,6 +54,7 @@ private:
     vector<COpenAssetImportMesh *> *m_asteroids;
     vector<glm::mat4 *> *m_asteroidLocations;
     COpenAssetImportMesh *m_pAsteroid;
+    COpenAssetImportMesh *m_pObelisk;
     float m_currentDistance;
 	double m_dt;
 	int m_framesPerSecond;
