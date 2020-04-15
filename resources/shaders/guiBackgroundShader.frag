@@ -24,7 +24,7 @@ void main(){
     float fluctuation = sin(time * 0.001f*2.0f)*0.15f;
     vec3 colour = baseColour + fluctuation;
 
-	
+	//ensures there is an outline
     if(gl_FragCoord.x < 10.0 || gl_FragCoord.y < 10.0 || gl_FragCoord.x > (guiWidth * 0.5f)-10.0 || gl_FragCoord.y > (guiHeight * 0.5f)-10.0){
 		colour = (baseColour * 0.8) + fluctuation;
     }

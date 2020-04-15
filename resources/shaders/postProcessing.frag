@@ -7,23 +7,7 @@ uniform vec4 vColour;
 uniform int width, height;
 uniform bool isBoosting;
 
-vec4 blur(){
-	float dx = 1.0 / float(width);
-	float dy = 1.0 / float(height);
-	int halfSize = 3;
-	vec4 avg = vec4(0);
-	for (int y = -halfSize; y <= halfSize; y++){
-		for(int x = -halfSize; x <= halfSize; x++){
-			avg += texture(sampler0, vTexCoord+vec2(x*dx, y*dy));
-		}
-	}
-	int N = (2*halfSize+1);
-	avg /= N*N;
-	return avg;
-
-
-}
-
+//Radial blur on render texture
 vec4 radialBlur(){
 	//Made using: https://stackoverflow.com/questions/4579020/how-do-i-use-a-glsl-shader-to-apply-a-radial-blur-to-an-entire-scene (adapted to Opengl 4)
     float samples[10];

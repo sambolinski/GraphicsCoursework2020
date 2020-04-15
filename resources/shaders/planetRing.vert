@@ -66,6 +66,8 @@ vec3 PhongModel(vec4 eyePosition, vec3 eyeNorm)
 float pseudoRandom(vec2 vector){
     return fract(sin(dot(vector.xy ,vec2(12.9898,78.233))) * 43758.5453);
 }
+//Determines the position of the asteroid in the ring depending on the gl_instanceID.
+//Converts polar coordinates to cartesian coordinates.
 vec3 positionOfAsteroid(int i){
     float ringRadius = 750;
     float angleIncrement = 360.0f / numberOfAsteroids;
