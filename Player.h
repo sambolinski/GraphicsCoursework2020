@@ -22,6 +22,7 @@ public:
     void Render();
     void RenderShield();
 
+    //Getters and Setters
     glm::vec3 &GetPosition() { return m_position; }
     glm::vec3 &GetView() { return m_view; }
     float &GetAngle() { return m_angle; }
@@ -80,11 +81,14 @@ private:
     bool m_isBoosting;
     float m_boostAcceleration;
     double m_timeBoosting;
+    float m_maxBoost;
         //Shield
     bool m_shield;
 
     //health
     unsigned int m_health;
+
+    //Positional Data
     glm::vec3 m_position;
     glm::vec3 m_view;
     glm::vec3 m_upVector;
@@ -93,5 +97,4 @@ private:
     CAudio *m_audio;
     float m_scale;
     float m_angle;
-    float m_maxBoost;
 };

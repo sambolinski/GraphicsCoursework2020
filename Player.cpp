@@ -27,7 +27,7 @@ CPlayer::CPlayer() {
     m_health = 0;
     m_maxBoost = 0;
 }
-
+//Deletes the player model and the shield model
 CPlayer::~CPlayer() {
     delete m_playerModel;
     delete m_shieldModel;
@@ -47,7 +47,7 @@ void CPlayer::Initialise(glm::vec3 position, glm::vec3 view) {
 
     //starting angle
     glm::vec3 base = (position - glm::vec3(0, 0, 0));
-    m_angle = 0.5f*3.141f;//90 degrees radians will ahve to change acosf(glm::dot(base, (m_view)) / (glm::length(base)*glm::length((m_view))));
+    m_angle = 0.5f*3.141f;//90 degrees radians will have to change acosf(glm::dot(base, (m_view)) / (glm::length(base)*glm::length((m_view))));
 
     m_scale = 1.0f;
     m_shield = false;
@@ -70,7 +70,7 @@ void CPlayer::AccelerateSide(float acceleration, double &dt) {
     //ternery statement - checks max speed is greater than minimum
     m_sideSpeed = m_sideSpeed + (acceleration * 1.2f * dt) >= m_maxSideSpeed * -1.0f ? m_sideSpeed + (acceleration * dt) : m_maxSideSpeed * -1.0f;
 }
-
+//decelerates the forward velocity
 void CPlayer::Decelerate(float acceleration, double &dt) {
     if (acceleration > 0) {
         m_speed = m_speed + (acceleration * dt) <= 0 ? m_speed + (acceleration * dt) : 0;
@@ -78,6 +78,7 @@ void CPlayer::Decelerate(float acceleration, double &dt) {
         m_speed = m_speed + (acceleration * dt) >= 0 ? m_speed + (acceleration * dt) : 0;
     }
 }
+//decelerates the sideways velocity
 void CPlayer::DecelerateSide(float acceleration, double &dt) {
     if (acceleration > 0) {
         m_sideSpeed = m_sideSpeed + (acceleration * dt) <= 0 ? m_sideSpeed + (acceleration * dt) : 0;
@@ -92,6 +93,8 @@ void CPlayer::Advance(double dt) {
     m_view = m_view + view * m_speed;
 
 }
+
+//Updates the  players velocity so it doesn't increase past a max or decrease past a minimum
 void CPlayer::Update(double dt, double max, bool playerUpdate) {
 
     glm::vec3 vector = glm::cross(m_view - m_position, m_upVector);
@@ -116,6 +119,7 @@ void CPlayer::Update(double dt, double max, bool playerUpdate) {
     Advance(dt);
     Strafe(max);
 }
+//Moves the player sideways and can't go off the track
 void CPlayer::Strafe( double max) {
     if (m_sideAmount > max) {
         m_sideAmount = max;
@@ -134,6 +138,7 @@ void CPlayer::Strafe( double max) {
 
     }
 }
+//Accelerates and decelerates based on keys pressed
 void CPlayer::TranslateByKeyboard(double dt) {
     if (GetKeyState(VK_UP) & 0x80 || GetKeyState('W') & 0x80) {
         Accelerate(m_acceleration * m_boost, dt);
@@ -180,7 +185,7 @@ void CPlayer::Set(glm::vec3 &position, glm::vec3 &viewpoint, glm::vec3 &upVector
 void CPlayer::Render() {
     m_playerModel->Render();
 }
-
+//Only renders shield if it is active
 void CPlayer::RenderShield() {
     if (m_shield) {
         glEnable(GL_BLEND);
@@ -188,7 +193,7 @@ void CPlayer::RenderShield() {
         m_shieldModel->Render();
     }
 }
-
+//Can only activate boost if it is not currently active and they have picked a boost
 void CPlayer::ActivateBoost() {
     if (m_numBoosts > 0) {
         if (m_isBoosting == false) {
@@ -200,6 +205,7 @@ void CPlayer::ActivateBoost() {
         }
     }
 }
+//Accelerates to a boost instead of instantly changing speed.
 void CPlayer::BoostAcceleration(double dt) {
     if (m_timeBoosting > m_maxBoost) {
         m_isBoosting = false;

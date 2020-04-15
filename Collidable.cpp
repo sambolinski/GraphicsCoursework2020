@@ -17,7 +17,7 @@ CCollidable::CCollidable() {
 CCollidable::~CCollidable() {
 
 }
-
+//Checks if the player is close enough to the collidable.
 bool CCollidable::CheckCollision(glm::vec3 &playerPosition, float &playerScale) {
     return glm::distance(m_position, playerPosition) - playerScale <= m_radius;
 }

@@ -253,11 +253,8 @@ void Game::Initialise()
     m_pShaderPrograms->push_back(pParticleShader);
 
 	// Create the skybox
-	// Skybox downloaded from https://opengameart.org/content/space-skybox-1
 	m_pSkybox->Create(2500.0f);
 	
-	// Create the planar terrain
-	//m_pPlanarTerrain->Create("resources\\textures\\", "grassfloor01.jpg", 2000.0f, 2000.0f, 50.0f); // Texture downloaded from http://www.psionicgames.com/?page_id=26 on 24 Jan 2013
 
 	m_pFtFont->LoadSystemFont("arial.ttf", 32);
     m_pFtFont->LoadFont("resources\\fonts\\LazenbyCompLiquid.ttf", 30); //Font downloaded from :https://www.dafont.com/lazenby-computer.font on 04/03/2020 (CC BY-SA 4.0)
@@ -361,6 +358,7 @@ void Game::Initialise()
             break;
         }
     }
+    //used for planet rings
     m_pAsteroid->Load("resources\\models\\Asteroid\\Asteroid1.obj");
 
 
@@ -533,7 +531,7 @@ void Game::RenderScene(glutil::MatrixStack &modelViewMatrixStack, int pass) {
     } else {
         pMainProgram->SetUniform("lights[1].La", glm::vec3(0.3f));
     }
-
+    //Changes dynamic colour from red to green to blue
     if ((int)(m_gameTime / 1000) % 3 == 0) {
         pMainProgram->SetUniform("lights[1].Ld", glm::vec3(3.0f, 0.0f, 0.0f));
         pMainProgram->SetUniform("lights[1].Ls", glm::vec3(3.0f, 0.0f, 0.0f));
@@ -593,9 +591,11 @@ void Game::RenderScene(glutil::MatrixStack &modelViewMatrixStack, int pass) {
     glm::vec3 nextPosition;
     m_pCatmullRom->Sample(0, obeliskPosition);
     m_pCatmullRom->Sample(1, nextPosition);
+    //TNB fo track at start used to offset obelisks
     glm::vec3 T = glm::normalize(nextPosition - obeliskPosition);
     glm::vec3 N = glm::normalize(glm::cross(T, glm::vec3(0,1,0)));
     glm::vec3 B = glm::normalize(glm::cross(N, T));
+    //move up and down continously
     glm::vec3 fluctuate = B*(6.0f+((float)(sin(m_gameTime / 600))*2.0f));
     modelViewMatrixStack.Push();
         pMainProgram->SetUniform("bUseTexture", true);
@@ -629,6 +629,7 @@ void Game::RenderScene(glutil::MatrixStack &modelViewMatrixStack, int pass) {
                     pMainProgram->SetUniform("pulse", false);
                     rotationalVector = (*m_collidableObjects)[i]->GetTNBFrame().T;
                 } else if ((*m_collidableObjects)[i]->GetType() == "POWERUP") {
+                    //Makes the colour of the powerups pulse with time
                     pMainProgram->SetUniform("pulse", true);
                     rotationalVector = (*m_collidableObjects)[i]->GetTNBFrame().B;
                 }
@@ -669,7 +670,7 @@ void Game::RenderScene(glutil::MatrixStack &modelViewMatrixStack, int pass) {
         pMainProgram->SetUniform("isTrack", false);
     modelViewMatrixStack.Pop();
 
-
+    /*
     //render isocahedron
     modelViewMatrixStack.Push();
         pMainProgram->SetUniform("bUseTexture", true);
@@ -679,6 +680,7 @@ void Game::RenderScene(glutil::MatrixStack &modelViewMatrixStack, int pass) {
         pMainProgram->SetUniform("matrices.normalMatrix", m_pCamera->ComputeNormalMatrix(modelViewMatrixStack.Top()));
         m_pIsocahedron->Render();
     modelViewMatrixStack.Pop();
+    */
 
     //Render player Shield
     modelViewMatrixStack.Push();
@@ -694,7 +696,7 @@ void Game::RenderScene(glutil::MatrixStack &modelViewMatrixStack, int pass) {
     
 
     
-    //POST PROCESSING
+    //POST PROCESSING for radial blur
     if (pass == 1) {
         CShaderProgram *pPostProcessingShader = (*m_pShaderPrograms)[3];
         pPostProcessingShader->UseProgram();
@@ -752,7 +754,7 @@ void Game::Update()
     float perspective = m_pPlayer->GetSpeed() < 0 ? 0 : m_pPlayer->GetSpeed() * 1.0f;
     perspective = perspective > 1.0f + ((m_pPlayer->GetBoost()-1) * 0.18f) ? 1.0f + ((m_pPlayer->GetBoost() - 1) * 0.18f) : perspective;
     m_pCamera->SetPerspectiveProjectionMatrix(45.0f + perspective, (float)width / (float)height, 0.5f, 5000.0f);
-
+    //Getting TNB frame of player
     m_pPlayer->Update(m_dt, m_pCatmullRom->GetTrackWidth() * 0.5f, playerUpdate);
     m_currentDistance += m_pPlayer->GetSpeed() * (float)m_dt * 0.1f;
     glm::vec3 playerPosition;
@@ -772,6 +774,7 @@ void Game::Update()
     playerPosition += m_pPlayer->GetStrafeVector();
     playerPosition += B * 5.0f;
     m_pPlayer->Set(playerPosition, look, up);
+    //Different Camera views
     switch (m_pCamera->GetViewType()) {
         case 0: // Third Person
             {
@@ -851,7 +854,8 @@ void Game::CheckCollisions() {
         }
     }
 }
-
+//Game over if the player dies or completes the course
+//m_gameOver = 1 means death, m_gameOver = 2 means compeltion
 void Game::CheckGameOver() {
     if (m_pPlayer->GetHealth() == 0) {
         m_paused = true;
@@ -893,7 +897,7 @@ void Game::DisplayFrameRate()
 		fontProgram->SetUniform("vColour", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
         //m_pFtFont->Print("Player: " + glm::to_string(m_pPlayer->GetPosition()), 20, height - 20, 20);
         //m_pFtFont->Print("Asteroid: " + glm::to_string((*m_collidableObjects)[0]->GetPosition()),20, height-50,20);
-        m_pFtFont->Print("Camera: " + glm::to_string(m_pCamera->GetPosition()), 20, height - 80, 20);
+        //m_pFtFont->Print("Camera: " + glm::to_string(m_pCamera->GetPosition()), 20, height - 80, 20);
         //m_pFtFont->Print("Current Check: " +std::to_string(m_currentCheck), 20, height - 110, 20);
         //m_pFtFont->Print("Time Boosting: " + std::to_string((float)m_pPlayer->GetTimeBoosting()), 20, height - 140, 20);
         //m_pFtFont->Print("Health: " + std::to_string(m_pPlayer->GetHealth()), 20, height - 170, 20);
@@ -927,7 +931,7 @@ void Game::GameLoop()
     m_gameTime += m_dt;
 
 }
-
+//Goes through all the collidables and if it is not static, they are moved depending on their placement in the vector, so later obstacles are faster
 void Game::UpdateCollidables() {
     if (m_collidableObjects != NULL) {
         for (unsigned int i = 0; i < m_collidableObjects->size(); i++) {

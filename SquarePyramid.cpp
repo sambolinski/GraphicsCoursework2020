@@ -43,7 +43,7 @@ void CSquarePyramid::Create(string directory, string filename, float width, floa
     float halfHeight = m_height / 2.0f;
     float halfDepth = m_depth / 2.0f;
 
-    // Vertex positions
+    // Vertex positions based similar to the plane using halfWidth
     glm::vec3 squarePyramidVertices[18] = {
         //Face Bottom Done
         glm::vec3(halfWidth, -halfDepth, -halfHeight),

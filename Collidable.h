@@ -1,6 +1,6 @@
 #pragma once
 #include "Common.h"
-
+//TNB frame for each collidable
 struct TNBFrame{
 public:
     TNBFrame();
@@ -22,7 +22,7 @@ public:
     ~CCollidable();
     bool CheckCollision(glm::vec3 &playerPosition, float &playerScale);
     virtual void Render() = 0;
-
+    //Getters and Setters
     glm::vec3 &GetPosition() { return m_position; }
     string &GetType() { return m_type; }
     float &GetRadius() { return m_radius; }
